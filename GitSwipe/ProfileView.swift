@@ -80,11 +80,15 @@ struct ProfileView: View {
                         Text("Lastly Starred Repositories")
                             .font(.custom("Doto-Black_Bold", size: 18))
 
-                        pinnedRepoCard(name: "Awesome Python", description: "A curated collection of high-quality Python libraries and resources.")
-
-                        pinnedRepoCard(name: "Cool ML", description: "Hands-on machine learning implementations and experiments.")
-
-                        pinnedRepoCard(name: "iOS SwiftUI", description: "Modern SwiftUI components and animation patterns.")
+                        if auth.starredRepos.isEmpty {
+                            Text("No starred repositories yet.")
+                                .foregroundColor(.gray)
+                                .font(.custom("Doto-Black_Bold", size: 13))
+                        } else {
+                            ForEach(auth.starredRepos, id: \.name) { repo in
+                                pinnedRepoCard(name: repo.name, description: repo.description)
+                            }
+                        }
                     }
                     .padding(.horizontal)
                 }
