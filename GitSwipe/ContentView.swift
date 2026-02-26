@@ -1,9 +1,3 @@
-//
-//  ContentView.swift
-//  GitSwipe
-//
-//  Created by Osman Kahraman on 2026-02-25.
-//
 
 import SwiftUI
 
@@ -19,6 +13,16 @@ class AuthManager: ObservableObject {
     func login(username: String) {
         self.username = username
         self.isLoggedIn = true
+    }
+
+    func logout() {
+        self.username = ""
+        self.avatarURL = nil
+        self.publicRepos = 0
+        self.followers = 0
+        self.following = 0
+        self.accessToken = nil
+        self.isLoggedIn = false
     }
 
     func fetchGitHubUser() {
@@ -43,33 +47,11 @@ class AuthManager: ObservableObject {
             }
         }.resume()
     }
-
-    func logout() {
-        self.username = ""
-        self.isLoggedIn = false
-    }
-}
-
-struct Repo: Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
-    let star: Int
-    let fork: Int
-    let issues: Int
-    let lastUpdate: String
-    let languages: [Language]
-}
-
-struct Language {
-    let name: String
-    let percentage: Double
-    let color: Color
 }
 
 struct ContentView: View {
     @EnvironmentObject var auth: AuthManager
-    
+
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -82,7 +64,7 @@ struct ContentView: View {
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
-    
+
     var body: some View {
         Group {
             if auth.isLoggedIn {

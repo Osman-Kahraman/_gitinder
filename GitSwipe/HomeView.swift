@@ -5,7 +5,24 @@
 //  Created by Osman Kahraman on 2026-02-25.
 //
 
+
 import SwiftUI
+
+struct Language {
+    let name: String
+    let percentage: Double
+    let color: Color
+}
+
+struct Repo {
+    let name: String
+    let description: String
+    let star: Int
+    let fork: Int
+    let issues: Int
+    let lastUpdate: String
+    let languages: [Language]
+}
 
 struct HomeView: View {
     @State private var repos: [Repo] = [
