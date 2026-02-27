@@ -35,7 +35,7 @@ struct GitSwipeApp: App {
     }
 
     private func exchangeCodeForToken(code: String) {
-        guard let url = URL(string: "http://localhost:3000/oauth/exchange") else { return }
+        guard let url = URL(string: "https://gitinder-auth.onrender.com/oauth/exchange") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
