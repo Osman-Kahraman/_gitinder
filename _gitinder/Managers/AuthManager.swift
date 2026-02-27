@@ -16,6 +16,7 @@ class AuthManager: ObservableObject {
     @Published var following: Int = 0
     @Published var accessToken: String?
     @Published var starredRepos: [Repo] = []
+    @Published var preferences: UserPreferences?
 
     func login(username: String) {
         self.username = username
@@ -30,6 +31,20 @@ class AuthManager: ObservableObject {
         self.following = 0
         self.accessToken = nil
         self.isLoggedIn = false
+    }
+    
+    func savePreferences(_ preferences: UserPreferences) {
+        self.preferences = preferences
+        if let data = try? JSONEncoder().encode(preferences) {
+            UserDefaults.standard.set(data, forKey: "user_preferences")
+        }
+    }
+
+    func loadPreferences() {
+        if let data = UserDefaults.standard.data(forKey: "user_preferences"),
+           let prefs = try? JSONDecoder().decode(UserPreferences.self, from: data) {
+            self.preferences = prefs
+        }
     }
 
     func fetchGitHubUser() {
