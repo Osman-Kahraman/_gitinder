@@ -84,6 +84,8 @@ To run _gitinder_ locally, you will need:
 
 ```
 _gitinder/
+├── _gitinder.xcodeproj/              # Xcode project configuration
+│
 ├── _gitinder/                        # iOS Application Target
 │
 │   ├── App/                          # Application Entry Layer
