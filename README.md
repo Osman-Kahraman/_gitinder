@@ -1,13 +1,22 @@
 # _gitinder
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/42c49324-4bfe-47dd-94ed-81d94bec8b5c" width="300"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/79b29275-a942-4d61-b264-9a752287c25b" width="300"/>
+</p>
+
 Swipe-based GitHub repository discovery app built with SwiftUI.
 
 _gitinder_ reimagines how developers explore GitHub repositories by bringing Tinder-style swipe mechanics into open-source discovery.
 
 Instead of scrolling through endless lists, you swipe.
 
-Right → Star  
-Left → Skip  
+**Right → Star**
+
+**Left → Skip**
 
 ---
 
@@ -30,9 +39,9 @@ GitHub’s list-based discovery can feel overwhelming.
 
 When searching for useful repositories, you often get:
 
-- Too many results
-- Too much noise
-- Not enough focus
+- **Too many results**
+- **Too much noise**
+- **Not enough focus**
 
 __gitinder_ solves this by presenting one repository at a time in a clean, interactive card interface. Which means less scrolling and more discovering.
 
@@ -119,7 +128,14 @@ _gitinder/
 
 ---
 
+## Usage
+
+Come on man! Just click **_gitinder.xcodeproj** file and that's all...
+
+---
+
 ## If You Like It
 
 Give the repo a star...
+
 Or swipe right...
