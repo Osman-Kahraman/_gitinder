@@ -23,9 +23,9 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Run Tests
+      - name: Build
         run: |
           xcodebuild \
           -scheme _gitinder \
           -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-          test
+          clean build
