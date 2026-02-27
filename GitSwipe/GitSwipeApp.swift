@@ -32,31 +32,19 @@ struct GitSwipeApp: App {
         }
 
         exchangeCodeForToken(code: code)
-        
-        print("Callback URL:", url)
-        print("Code:", code)
     }
 
     private func exchangeCodeForToken(code: String) {
-        let clientID = "Ov23liJclCPSLtQvGDUQ"
-        let clientSecret = "726af73b1ee056abe9a9156d3ae1b4307001971f"
-
-        guard let url = URL(string: "https://github.com/login/oauth/access_token") else { return }
+        guard let url = URL(string: "http://localhost:3000/oauth/exchange") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let redirectURI = "gitinder://callback"
-        let bodyString = "client_id=\(clientID)&client_secret=\(clientSecret)&code=\(code)&redirect_uri=\(redirectURI)"
-        request.httpBody = bodyString.data(using: .utf8)
+        let body = ["code": code]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                print("Raw token response:", String(data: data, encoding: .utf8) ?? "nil")
-            }
-
+        URLSession.shared.dataTask(with: request) { data, _, _ in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let accessToken = json["access_token"] as? String else {

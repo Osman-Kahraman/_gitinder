@@ -84,7 +84,7 @@ struct LoginView: View {
     }
 
     private func startGitHubOAuth() {
-        let clientID = "Ov23liJclCPSLtQvGDUQ"
+        let clientID = "Ov23liHKmlUxODlmiXfE"
         let scope = "read:user user:email"
         let redirectURI = "gitinder://callback"
 
