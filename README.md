@@ -12,9 +12,11 @@ _gitinder_ reimagines how developers explore GitHub repositories by bringing Tin
 
 Instead of scrolling through endless lists, you swipe.
 
-**Right → Star**
-
-**Left → Skip**
+<p align="center">
+  <b>Right → Star</b>
+  <br>
+  <b>Left → Skip</b>
+</p>
 
 ---
 
@@ -134,6 +136,8 @@ Come on man! Just click **_gitinder.xcodeproj** file and that's all...
 
 ## If You Like It
 
-Give the repo a star...
-
-Or swipe right...
+<p align="center">
+  <b>Give the repo a star...</b>
+  <br>
+  <b>Or swipe left...</b>
+</p>
