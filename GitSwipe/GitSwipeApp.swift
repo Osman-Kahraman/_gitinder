@@ -38,8 +38,8 @@ struct GitSwipeApp: App {
     }
 
     private func exchangeCodeForToken(code: String) {
-        let clientID = "Ov23lijhI3pQGO55CMkE"
-        let clientSecret = "4cd7b25e825ab5df25736dca91be5b1cbb29dc76"
+        let clientID = "Ov23liJclCPSLtQvGDUQ"
+        let clientSecret = "726af73b1ee056abe9a9156d3ae1b4307001971f"
 
         guard let url = URL(string: "https://github.com/login/oauth/access_token") else { return }
 

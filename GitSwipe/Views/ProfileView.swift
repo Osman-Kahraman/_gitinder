@@ -49,12 +49,6 @@ struct ProfileView: View {
                         Text(auth.username.isEmpty ? "@username" : "@\(auth.username.lowercased())")
                             .foregroundColor(.gray)
                             .font(.custom("Doto-Black_Bold", size: 14))
-
-                        Text("iOS Developer • ML Enthusiast • Building _gitinder")
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white.opacity(0.8))
-                            .font(.custom("Doto-Black_Bold", size: 14))
-                            .padding(.horizontal)
                     }
 
                     // Stats Section
