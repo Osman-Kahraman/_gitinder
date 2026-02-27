@@ -1,6 +1,6 @@
 //
-//  GitSwipeApp.swift
-//  GitSwipe
+//  _gitinderApp.swift
+//  _gitinder
 //
 //  Created by Osman Kahraman on 2026-02-25.
 //

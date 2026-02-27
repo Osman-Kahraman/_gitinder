@@ -1,3 +1,11 @@
+//
+//  ContentView.swift
+//  _gitinder
+//
+//  Created by Osman Kahraman on 2026-02-25.
+//
+
+
 import SwiftUI
 
 struct ContentView: View {

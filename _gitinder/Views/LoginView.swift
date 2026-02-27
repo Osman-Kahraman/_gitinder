@@ -1,6 +1,6 @@
 //
 //  LoginView.swift
-//  GitSwipe
+//  _gitinder
 //
 //  Created by Osman Kahraman on 2026-02-25.
 //
