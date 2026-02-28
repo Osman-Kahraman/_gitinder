@@ -18,18 +18,33 @@ class AuthManager: ObservableObject {
     @Published var starredRepos: [Repo] = []
     @Published var preferences: UserPreferences?
 
+    private let tokenKey = "github_access_token"
+
+    init() {
+        loadPreferences()
+
+        if let savedToken = KeychainManager.shared.read(key: tokenKey) {
+            self.accessToken = savedToken
+            self.isLoggedIn = true
+            fetchGitHubUser()
+        }
+    }
+
     func login(username: String) {
         self.username = username
         self.isLoggedIn = true
     }
 
     func logout() {
+        KeychainManager.shared.delete(key: tokenKey)
+
         self.username = ""
         self.avatarURL = nil
         self.publicRepos = 0
         self.followers = 0
         self.following = 0
         self.accessToken = nil
+        self.preferences = nil
         self.isLoggedIn = false
     }
     
@@ -44,6 +59,18 @@ class AuthManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "user_preferences"),
            let prefs = try? JSONDecoder().decode(UserPreferences.self, from: data) {
             self.preferences = prefs
+        }
+    }
+
+    func startOAuthLogin() {
+        let clientID = "Ov23liHKmlUxODlmiXfE"
+        let scope = "read:user user:email"
+        let redirectURI = "gitinder://callback"
+
+        let authURLString = "https://github.com/login/oauth/authorize?client_id=\(clientID)&scope=\(scope)&redirect_uri=\(redirectURI)"
+
+        if let url = URL(string: authURLString) {
+            UIApplication.shared.open(url)
         }
     }
 

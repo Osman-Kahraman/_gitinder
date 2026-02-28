@@ -53,7 +53,9 @@ struct GitSwipeApp: App {
             }
 
             DispatchQueue.main.async {
+                KeychainManager.shared.save(key: "github_access_token", value: accessToken)
                 auth.accessToken = accessToken
+                auth.isLoggedIn = true
                 auth.fetchGitHubUser()
             }
         }.resume()

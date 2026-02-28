@@ -32,7 +32,7 @@ struct LoginView: View {
 
                 VStack(spacing: 16) {
                     Button(action: {
-                        startGitHubOAuth()
+                        auth.startOAuthLogin()
                     }) {
                         HStack {
                             Image(systemName: "globe")
@@ -80,18 +80,6 @@ struct LoginView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func startGitHubOAuth() {
-        let clientID = "Ov23liHKmlUxODlmiXfE"
-        let scope = "read:user user:email"
-        let redirectURI = "gitinder://callback"
-
-        let authURLString = "https://github.com/login/oauth/authorize?client_id=\(clientID)&scope=\(scope)&redirect_uri=\(redirectURI)"
-
-        if let url = URL(string: authURLString) {
-            UIApplication.shared.open(url)
         }
     }
 }
