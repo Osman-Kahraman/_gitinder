@@ -5,7 +5,6 @@
 //  Created by Osman Kahraman on 2026-02-25.
 //
 
-
 import SwiftUI
 
 struct Language {
@@ -28,6 +27,7 @@ struct Repo {
 struct HomeView: View {
     @EnvironmentObject var auth: AuthManager
     @State private var repos: [Repo] = []
+    @State private var allRepos: [Repo] = []
 
     @State private var currentIndex = 0
     @State private var dragOffset: CGFloat = 0
@@ -37,12 +37,12 @@ struct HomeView: View {
         ZStack {
             Color.black
                 .overlay(
-                        LinearGradient(
-                            colors: [.red.opacity(0.1), .clear, .clear, .clear, .clear, .clear, .green.opacity(0.1)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                    LinearGradient(
+                        colors: [.red.opacity(0.1), .clear, .clear, .clear, .clear, .clear, .green.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
+                )
                 .overlay(
                     Color.green.opacity(dragOffset > 0 ? min(Double(dragOffset / 150), 0.4) : 0)
                 )
@@ -51,7 +51,7 @@ struct HomeView: View {
                 )
                 .ignoresSafeArea()
 
-            VStack() {
+            VStack {
                 Text("_gitinder")
                     .foregroundColor(.white)
                     .font(.custom("Doto-Black_ExtraBold", size: 28))
@@ -63,12 +63,10 @@ struct HomeView: View {
                         SwipeCard(
                             repo: repos[currentIndex],
                             onSwipeLeft: {
-                                print("Disliked")
                                 lastSwipeDirection = -1
                                 nextCard()
                             },
                             onSwipeRight: {
-                                print("Liked (Star)")
                                 lastSwipeDirection = 1
                                 nextCard()
                             },
@@ -97,8 +95,6 @@ struct HomeView: View {
                 Spacer()
             }
         }
-        .font(.custom("Doto-Black_Bold", size: 18))
-        .foregroundColor(.white)
         .animation(.easeOut(duration: 0.6), value: dragOffset)
         .animation(.spring(), value: currentIndex)
         .onAppear {
@@ -112,17 +108,28 @@ struct HomeView: View {
         }
     }
 
+    func filterReposByPreferences(_ repos: [Repo]) -> [Repo] {
+        guard let prefs = auth.preferences else { return repos }
+
+        return repos.filter { repo in
+            let totalMatchPercentage = repo.languages
+                .filter { prefs.selectedLanguages.contains($0.name) }
+                .reduce(0) { $0 + $1.percentage }
+
+            return totalMatchPercentage >= 50
+        }
+    }
+
     private func fetchTrendingRepositories() {
         guard let url = URL(string: "https://api.github.com/search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=20") else { return }
 
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: request) { data, _, _ in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
-                print("Failed to fetch repos")
                 return
             }
 
@@ -132,8 +139,6 @@ struct HomeView: View {
                     return nil
                 }
 
-                let languagesURL = item["languages_url"] as? String ?? ""
-                
                 return Repo(
                     name: name,
                     description: description,
@@ -141,16 +146,18 @@ struct HomeView: View {
                     fork: item["forks_count"] as? Int ?? 0,
                     issues: item["open_issues_count"] as? Int ?? 0,
                     lastUpdate: item["updated_at"] as? String ?? "",
-                    languagesURL: languagesURL,
+                    languagesURL: item["languages_url"] as? String ?? "",
                     languages: []
                 )
             }
 
             DispatchQueue.main.async {
+                self.allRepos = fetchedRepos
                 self.repos = fetchedRepos
                 self.currentIndex = 0
-                for index in self.repos.indices {
-                    fetchLanguages(for: self.repos[index], at: index)
+
+                for index in self.allRepos.indices {
+                    fetchLanguages(for: self.allRepos[index], at: index)
                 }
             }
         }.resume()
@@ -178,15 +185,22 @@ struct HomeView: View {
             }
 
             DispatchQueue.main.async {
-                if index < self.repos.count {
-                    self.repos[index].languages = mappedLanguages
+                if index < self.allRepos.count {
+                    self.allRepos[index].languages = mappedLanguages
+                }
+
+                let filtered = filterReposByPreferences(self.allRepos)
+                self.repos = filtered
+
+                if self.currentIndex >= self.repos.count {
+                    self.currentIndex = 0
                 }
             }
         }.resume()
     }
 }
 
-
 #Preview {
     HomeView()
+        .environmentObject(AuthManager())
 }

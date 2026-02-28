@@ -11,6 +11,21 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthManager
 
+    private let githubLanguageColors: [String: Color] = [
+        "Swift": Color(red: 1.0, green: 0.45, blue: 0.0),
+        "Python": Color(red: 0.21, green: 0.36, blue: 0.63),
+        "JavaScript": Color(red: 0.95, green: 0.85, blue: 0.2),
+        "TypeScript": Color(red: 0.2, green: 0.45, blue: 0.85),
+        "Java": Color(red: 0.69, green: 0.13, blue: 0.13),
+        "C++": Color(red: 0.0, green: 0.48, blue: 0.8),
+        "C": Color(red: 0.33, green: 0.33, blue: 0.33),
+        "Go": Color(red: 0.0, green: 0.68, blue: 0.71),
+        "Rust": Color(red: 0.87, green: 0.4, blue: 0.2),
+        "Kotlin": Color(red: 0.6, green: 0.2, blue: 0.8),
+        "PHP": Color(red: 0.47, green: 0.53, blue: 0.8),
+        "Dart": Color(red: 0.0, green: 0.6, blue: 0.8)
+    ]
+
     var body: some View {
         ZStack {
             Color.black
@@ -66,6 +81,51 @@ struct ProfileView: View {
                     .padding()
                     .background(Color.red.opacity(0.8))
                     .cornerRadius(8)
+
+                    // Preferences Section
+                    if let prefs = auth.preferences {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Your Languages")
+                                .font(.custom("Doto-Black_Bold", size: 18))
+                            
+
+                            if prefs.selectedLanguages.isEmpty {
+                                Text("No preferred languages selected.")
+                                    .foregroundColor(.gray)
+                                    .font(.custom("Doto-Black_Bold", size: 13))
+                            } else {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 130))], spacing: 14) {
+                                    ForEach(prefs.selectedLanguages, id: \.self) { language in
+                                        Text(language)
+                                            .font(.custom("Doto-Black_Bold", size: 14))
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal, 18)
+                                            .background(Color.black)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 20)
+                                                    .stroke(githubLanguageColors[language] ?? Color.gray, lineWidth: 2)
+                                                    .shadow(color: (githubLanguageColors[language] ?? Color.gray).opacity(0.9), radius: 6)
+                                            )
+                                            .foregroundColor(githubLanguageColors[language] ?? .white)
+                                    }
+                                    NavigationLink(destination: PreferencesView()) {
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal, 20)
+                                            .background(Color.black)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 20)
+                                                    .stroke(Color.white.opacity(0.4), lineWidth: 2)
+                                                    .shadow(color: Color.white.opacity(0.6), radius: 6)
+                                            )
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
 
                     Divider()
                         .background(Color.white.opacity(0.2))
