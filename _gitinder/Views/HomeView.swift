@@ -121,7 +121,29 @@ struct HomeView: View {
     }
 
     private func fetchTrendingRepositories() {
-        guard let url = URL(string: "https://api.github.com/search/repositories?q=stars:<100&sort=stars&order=desc&per_page=50") else { return }
+        guard let prefs = auth.preferences,
+              !prefs.selectedLanguages.isEmpty else {
+            fetchSingleQuery(query: "stars:<100")
+            return
+        }
+
+        // Limit to first 5 languages to avoid GitHub boolean operator limit
+        let languages = Array(prefs.selectedLanguages.prefix(5))
+
+        self.allRepos = []
+        self.repos = []
+        self.currentIndex = 0
+
+        for language in languages {
+            let query = "language:\(language) stars:<100"
+            fetchSingleQuery(query: query)
+        }
+    }
+
+    private func fetchSingleQuery(query: String) {
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        
+        guard let url = URL(string: "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=50") else { return }
 
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -152,8 +174,11 @@ struct HomeView: View {
             }
 
             DispatchQueue.main.async {
-                self.allRepos = fetchedRepos
-                self.repos = fetchedRepos
+                let existingNames = Set(self.allRepos.map { $0.name })
+                let newUnique = fetchedRepos.filter { !existingNames.contains($0.name) }
+
+                self.allRepos.append(contentsOf: newUnique)
+                self.repos = self.allRepos
                 self.currentIndex = 0
 
                 for index in self.allRepos.indices {
