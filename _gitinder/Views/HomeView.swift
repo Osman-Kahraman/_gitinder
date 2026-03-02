@@ -88,7 +88,7 @@ struct HomeView: View {
                         ))
                     }
                 } else {
-                    Text("Woah! You reached your limit today, come tomorrow...")
+                    Text(":)")
                         .foregroundColor(.white)
                         .font(.custom("Doto-Black_Bold", size: 24))
                 }
