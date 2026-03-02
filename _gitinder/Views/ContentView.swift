@@ -13,8 +13,8 @@ struct ContentView: View {
 
     init() {
         let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.black
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor.lightGray
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.lightGray]
         appearance.stackedLayoutAppearance.selected.iconColor = UIColor.white
@@ -50,9 +50,6 @@ struct ContentView: View {
                         }
                     }
                     .tint(.white)
-                    .toolbarBackground(Color.black, for: .tabBar)
-                    .toolbarBackground(.visible, for: .tabBar)
-                    .toolbarColorScheme(.dark, for: .tabBar)
                 }
             } else {
                 LoginView()
