@@ -13,7 +13,8 @@ struct Language {
     let color: Color
 }
 
-struct Repo {
+struct Repo: Identifiable {
+    let id = UUID()
     let name: String
     let description: String
     let star: Int
@@ -100,6 +101,10 @@ struct HomeView: View {
         .onAppear {
             fetchTrendingRepositories()
         }
+        .onReceive(auth.$preferences) { _ in
+            // Refetch whenever preferences object changes
+            fetchTrendingRepositories()
+        }
     }
 
     func nextCard() {
@@ -148,12 +153,34 @@ struct HomeView: View {
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let items = json["items"] as? [[String: Any]] else {
+        // Authenticated request to increase rate limit
+        if let token = auth.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, _ in
+            guard let data = data else {
+                print("No data returned for query:", query)
                 return
             }
+
+            if let response = response as? HTTPURLResponse {
+                print("Status Code for \(query):", response.statusCode)
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                print("X JSON parse failed for query:", query)
+                print(String(data: data, encoding: .utf8) ?? "No readable body")
+                return
+            }
+
+            guard let items = json["items"] as? [[String: Any]] else {
+                print("! No 'items' in response for query:", query)
+                print(json)
+                return
+            }
+
+            print("Query:", query, "| Repo Count:", items.count)
 
             let fetchedRepos: [Repo] = items.compactMap { item in
                 guard let name = item["name"] as? String,
@@ -178,24 +205,46 @@ struct HomeView: View {
                 let newUnique = fetchedRepos.filter { !existingNames.contains($0.name) }
 
                 self.allRepos.append(contentsOf: newUnique)
-                self.repos = self.allRepos
-                self.currentIndex = 0
 
-                for index in self.allRepos.indices {
-                    fetchLanguages(for: self.allRepos[index], at: index)
+                // Shuffle to mix different language results
+                self.allRepos.shuffle()
+
+                self.repos = self.allRepos
+
+                // Only reset index if this is the first load
+                if self.currentIndex >= self.repos.count {
+                    self.currentIndex = 0
+                }
+
+                for repo in self.allRepos.prefix(10) {
+                    fetchLanguages(for: repo)
                 }
             }
         }.resume()
     }
 
-    private func fetchLanguages(for repo: Repo, at index: Int) {
+    private func fetchLanguages(for repo: Repo) {
         guard let url = URL(string: repo.languagesURL) else { return }
 
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            guard let data = data,
-                  let languageDict = try? JSONSerialization.jsonObject(with: data) as? [String: Int] else {
+        var request = URLRequest(url: url)
+
+        if let token = auth.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            guard let data = data else {
+                print("X No language data for repo:", repo.name)
                 return
             }
+
+            guard let languageDict = try? JSONSerialization.jsonObject(with: data) as? [String: Int] else {
+                print("x Language JSON parse failed for repo:", repo.name)
+                print(String(data: data, encoding: .utf8) ?? "No readable body")
+                return
+            }
+
+            print("Languages fetched for:", repo.name, "| Count:", languageDict.count)
 
             let total = languageDict.values.reduce(0, +)
 
@@ -210,8 +259,9 @@ struct HomeView: View {
             }
 
             DispatchQueue.main.async {
-                if index < self.allRepos.count {
-                    self.allRepos[index].languages = mappedLanguages
+                // Find repo by id instead of index (prevents mismatch after shuffle)
+                if let repoIndex = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
+                    self.allRepos[repoIndex].languages = mappedLanguages
                 }
 
                 let filtered = filterReposByPreferences(self.allRepos)
