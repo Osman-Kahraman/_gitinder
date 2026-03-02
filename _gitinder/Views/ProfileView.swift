@@ -108,7 +108,7 @@ struct ProfileView: View {
                                             )
                                             .foregroundColor(githubLanguageColors[language] ?? .white)
                                     }
-                                    NavigationLink(destination: PreferencesView()) {
+                                    NavigationLink(destination: PreferencesView(isOnboarding: false)) {
                                         Image(systemName: "plus")
                                             .font(.system(size: 16, weight: .bold))
                                             .padding(.vertical, 10)

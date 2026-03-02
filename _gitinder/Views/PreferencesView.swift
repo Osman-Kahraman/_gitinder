@@ -10,6 +10,8 @@ import SwiftUI
 struct PreferencesView: View {
 
     @EnvironmentObject var auth: AuthManager
+    @Environment(\.dismiss) private var dismiss
+    var isOnboarding: Bool = false
 
     let languages = [
         "Swift", "Python", "JavaScript", "TypeScript", "Go", "Rust", "C++", "C",
@@ -43,6 +45,12 @@ struct PreferencesView: View {
             Button(action: {
                 let prefs = UserPreferences(selectedLanguages: Array(selected))
                 auth.savePreferences(prefs)
+                
+                if isOnboarding {
+                    // onboarding flow handled by root
+                } else {
+                    dismiss()
+                }
             }) {
                 Text("Continue")
                     .font(.custom("Doto-Black_Bold", size: 18))
@@ -56,6 +64,11 @@ struct PreferencesView: View {
         }
         .padding()
         .background(Color.black.ignoresSafeArea())
+        .onAppear {
+            if let existing = auth.preferences?.selectedLanguages {
+                selected = Set(existing)
+            }
+        }
     }
 
     @ViewBuilder
@@ -92,5 +105,6 @@ struct PreferencesView: View {
 }
 
 #Preview {
-    PreferencesView()
+    PreferencesView(isOnboarding: false)
+        .environmentObject(AuthManager())
 }

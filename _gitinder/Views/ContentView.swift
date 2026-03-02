@@ -27,23 +27,27 @@ struct ContentView: View {
     var body: some View {
         Group {
             if auth.isLoggedIn {
-                if auth.preferences == nil {
-                    PreferencesView()
+                if auth.needsOnboarding {
+                    PreferencesView(isOnboarding: true)
                         .tint(.white)
                 } else {
                     TabView {
-                        HomeView()
-                            .tabItem {
-                                Image(systemName: "house.fill")
-                                Text("Home")
-                            }
+                        NavigationStack {
+                            HomeView()
+                        }
+                        .tabItem {
+                            Image(systemName: "house.fill")
+                            Text("Home")
+                        }
 
-                        ProfileView()
-                            .environmentObject(auth)
-                            .tabItem {
-                                Image(systemName: "person.fill")
-                                Text("Profile")
-                            }
+                        NavigationStack {
+                            ProfileView()
+                                .environmentObject(auth)
+                        }
+                        .tabItem {
+                            Image(systemName: "person.fill")
+                            Text("Profile")
+                        }
                     }
                     .tint(.white)
                     .toolbarBackground(Color.black, for: .tabBar)

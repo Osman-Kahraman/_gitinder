@@ -17,6 +17,7 @@ class AuthManager: ObservableObject {
     @Published var accessToken: String?
     @Published var starredRepos: [Repo] = []
     @Published var preferences: UserPreferences?
+    @Published var needsOnboarding: Bool = false
 
     private let tokenKey = "github_access_token"
 
@@ -26,6 +27,12 @@ class AuthManager: ObservableObject {
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
             self.accessToken = savedToken
             self.isLoggedIn = true
+
+            // Only trigger onboarding if user is logged in AND has no preferences
+            if self.isLoggedIn && self.preferences == nil {
+                self.needsOnboarding = true
+            }
+
             fetchGitHubUser()
         }
     }
@@ -46,10 +53,12 @@ class AuthManager: ObservableObject {
         self.accessToken = nil
         self.preferences = nil
         self.isLoggedIn = false
+        self.needsOnboarding = false
     }
     
     func savePreferences(_ preferences: UserPreferences) {
         self.preferences = preferences
+        self.needsOnboarding = false
         if let data = try? JSONEncoder().encode(preferences) {
             UserDefaults.standard.set(data, forKey: "user_preferences")
         }

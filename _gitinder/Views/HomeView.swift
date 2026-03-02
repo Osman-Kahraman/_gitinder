@@ -38,7 +38,7 @@ struct HomeView: View {
             Color.black
                 .overlay(
                     LinearGradient(
-                        colors: [.red.opacity(0.1), .clear, .clear, .clear, .clear, .clear, .green.opacity(0.1)],
+                        colors: [.clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -121,7 +121,7 @@ struct HomeView: View {
     }
 
     private func fetchTrendingRepositories() {
-        guard let url = URL(string: "https://api.github.com/search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=20") else { return }
+        guard let url = URL(string: "https://api.github.com/search/repositories?q=stars:<100&sort=stars&order=desc&per_page=50") else { return }
 
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
