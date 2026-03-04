@@ -221,4 +221,37 @@ class AuthManager: ObservableObject {
 
         }.resume()
     }
+    
+    func unstarRepository(owner: String, repo: String) {
+        guard let token = accessToken else { return }
+
+        let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
+        guard let url = URL(string: urlString) else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+
+            if let error = error {
+                print("Unstar error:", error)
+                return
+            }
+
+            if let http = response as? HTTPURLResponse {
+                print("Unstar status:", http.statusCode)
+
+                if http.statusCode == 204 {
+                    DispatchQueue.main.async {
+                        // Refresh starred repos list after successful unstar
+                        self.fetchStarredRepositories()
+                    }
+                }
+            }
+
+        }.resume()
+    }
 }

@@ -16,9 +16,10 @@ struct ProfileView: View {
             Color.black
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header
+            List {
+
+                // Header Section
+                Section {
                     VStack(spacing: 12) {
                         if let avatarURL = auth.avatarURL,
                            let url = URL(string: avatarURL) {
@@ -51,42 +52,67 @@ struct ProfileView: View {
                             .foregroundColor(.gray)
                             .font(.custom("Doto-Black_Bold", size: 14))
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .listRowBackground(Color.black)
+                }
 
-                    // Stats Section
+                // Stats Section
+                Section {
                     HStack(spacing: 40) {
                         profileStat(title: "Repos", value: "\(auth.publicRepos)")
                         profileStat(title: "Followers", value: "\(auth.followers)")
                         profileStat(title: "Following", value: "\(auth.following)")
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .listRowBackground(Color.black)
+                }
 
+                // Logout Section
+                Section {
                     Button("Logout") {
                         auth.logout()
                     }
                     .font(.custom("Doto-Black_Bold", size: 14))
                     .padding()
+                    .frame(maxWidth: .infinity)
                     .background(Color.red.opacity(0.8))
                     .cornerRadius(8)
+                    .listRowBackground(Color.black)
+                }
 
-                    // Lastly Starred Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Lastly Starred Repositories")
-                            .font(.custom("Doto-Black_Bold", size: 18))
+                // Starred Repositories Section
+                Section(header:
+                    Text("Lastly Starred Repositories")
+                        .font(.custom("Doto-Black_Bold", size: 18))
+                        .foregroundColor(.white)
+                ) {
 
-                        if auth.starredRepos.isEmpty {
-                            Text("No starred repositories yet.")
-                                .foregroundColor(.gray)
-                                .font(.custom("Doto-Black_Bold", size: 13))
-                        } else {
-                            ForEach(auth.starredRepos, id: \.name) { repo in
-                                pinnedRepoCard(name: repo.name, description: repo.description)
-                            }
+                    if auth.starredRepos.isEmpty {
+                        Text("No starred repositories yet.")
+                            .foregroundColor(.gray)
+                            .font(.custom("Doto-Black_Bold", size: 13))
+                            .listRowBackground(Color.black)
+                    } else {
+                        ForEach(auth.starredRepos, id: \.name) { repo in
+                            pinnedRepoCard(name: repo.name, description: repo.description)
+                                .listRowBackground(Color.black)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        auth.unstarRepository(owner: repo.owner, repo: repo.name)
+                                    } label: {
+                                        Label("Unstar", systemImage: "star.slash")
+                                    }
+                                    .tint(.red.opacity(0.8))
+                                }
                         }
                     }
-                    .padding(.horizontal)
                 }
-                .padding(.top, 40)
-                .padding(.bottom, 100)
+
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
         .onAppear {
             auth.fetchStarredRepositories()
