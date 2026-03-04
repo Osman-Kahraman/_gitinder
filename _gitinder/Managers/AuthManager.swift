@@ -19,12 +19,15 @@ class AuthManager: ObservableObject {
     @Published var preferences: UserPreferences?
     @Published var needsOnboarding: Bool = false
     @Published var starLimit: Int = 100
+    @Published var blacklistedRepos: Set<String> = []
+    private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
 
     init() {
         loadPreferences()
         loadStarLimit()
+        loadBlacklist()
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
             self.accessToken = savedToken
@@ -81,6 +84,28 @@ class AuthManager: ObservableObject {
     func loadStarLimit() {
         if let saved = UserDefaults.standard.value(forKey: "user_star_limit") as? Int {
             self.starLimit = saved
+        }
+    }
+
+    func addRepoToBlacklist(owner: String, repo: String) {
+        let key = "\(owner)/\(repo)"
+        blacklistedRepos.insert(key)
+        saveBlacklist()
+    }
+
+    func isRepoBlacklisted(owner: String, repo: String) -> Bool {
+        let key = "\(owner)/\(repo)"
+        return blacklistedRepos.contains(key)
+    }
+
+    private func saveBlacklist() {
+        let array = Array(blacklistedRepos)
+        UserDefaults.standard.set(array, forKey: blacklistKey)
+    }
+
+    private func loadBlacklist() {
+        if let saved = UserDefaults.standard.array(forKey: blacklistKey) as? [String] {
+            blacklistedRepos = Set(saved)
         }
     }
 
@@ -166,8 +191,6 @@ class AuthManager: ObservableObject {
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
         
         guard let url = URL(string: urlString) else { return }
-        
-        print("-URL -----------------------------------\n\(url)\n----------------------------------------")
 
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"

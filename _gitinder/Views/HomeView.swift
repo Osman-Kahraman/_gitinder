@@ -119,6 +119,10 @@ struct HomeView: View {
                             repo: repos[currentIndex],
                             onSwipeLeft: {
                                 lastSwipeDirection = -1
+                                
+                                let repo = repos[currentIndex]
+                                auth.addRepoToBlacklist(owner: repo.owner, repo: repo.name)
+                                
                                 nextCard()
                             },
                             onSwipeRight: {
@@ -185,7 +189,9 @@ struct HomeView: View {
 
     func nextCard() {
         withAnimation(.spring()) {
-            currentIndex += 1
+            if currentIndex < repos.count - 1 {
+                currentIndex += 1
+            }
         }
     }
 
@@ -278,22 +284,26 @@ struct HomeView: View {
             }
 
             DispatchQueue.main.async {
-                let existingNames = Set(self.allRepos.map { $0.name })
-                let newUnique = fetchedRepos.filter { !existingNames.contains($0.name) }
+                let existingIDs = Set(self.allRepos.map { "\($0.owner)/\($0.name)" })
+                let newUnique = fetchedRepos.filter {
+                    !existingIDs.contains("\($0.owner)/\($0.name)")
+                }
 
-                self.allRepos.append(contentsOf: newUnique)
+                let filteredBlacklist = newUnique.filter {
+                    !auth.isRepoBlacklisted(owner: $0.owner, repo: $0.name)
+                }
+
+                self.allRepos.append(contentsOf: filteredBlacklist)
 
                 // Shuffle to mix different language results
-                self.allRepos.shuffle()
-
-                self.repos = self.allRepos
+                self.repos = self.allRepos.shuffled()
 
                 // Only reset index if this is the first load
                 if self.currentIndex >= self.repos.count {
                     self.currentIndex = 0
                 }
 
-                for repo in self.allRepos.prefix(10) {
+                for repo in filteredBlacklist.prefix(5) {
                     fetchLanguages(for: repo)
                 }
             }
