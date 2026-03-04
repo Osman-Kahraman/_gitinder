@@ -33,6 +33,7 @@ struct HomeView: View {
     @State private var currentIndex = 0
     @State private var dragOffset: CGFloat = 0
     @State private var lastSwipeDirection: CGFloat = 0
+    @State private var showLanguagePreferences = false
 
     var body: some View {
         ZStack {
@@ -53,9 +54,35 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             VStack {
-                Text("_gitinder")
-                    .foregroundColor(.white)
-                    .font(.custom("Doto-Black_ExtraBold", size: 28))
+                HStack(spacing: 8) {
+                    Image(systemName: "slider.horizontal.3")
+                        .foregroundColor(.gray)
+                    Button {
+                        withAnimation(.spring()) {
+                            showLanguagePreferences.toggle()
+                        }
+                    } label: {
+                        HStack {
+                            Text("Languages")
+                                .foregroundColor(.white)
+                                .font(.custom("Doto-Black_ExtraBold", size: 14))
+
+                            Spacer()
+
+                            Image(systemName: showLanguagePreferences ? "chevron.up" : "chevron.down")
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
+                        )
+                        .cornerRadius(14)
+                        .padding(.horizontal)
+                    }
+                }
 
                 Spacer()
 
@@ -98,6 +125,13 @@ struct HomeView: View {
         }
         .animation(.easeOut(duration: 0.6), value: dragOffset)
         .animation(.spring(), value: currentIndex)
+        .sheet(isPresented: $showLanguagePreferences) {
+            PreferencesView()
+                .environmentObject(auth)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.black)
+        }
         .onAppear {
             fetchTrendingRepositories()
         }

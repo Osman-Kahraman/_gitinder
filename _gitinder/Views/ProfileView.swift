@@ -82,54 +82,6 @@ struct ProfileView: View {
                     .background(Color.red.opacity(0.8))
                     .cornerRadius(8)
 
-                    // Preferences Section
-                    if let prefs = auth.preferences {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Your Languages")
-                                .font(.custom("Doto-Black_Bold", size: 18))
-                            
-
-                            if prefs.selectedLanguages.isEmpty {
-                                Text("No preferred languages selected.")
-                                    .foregroundColor(.gray)
-                                    .font(.custom("Doto-Black_Bold", size: 13))
-                            } else {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 130))], spacing: 14) {
-                                    ForEach(prefs.selectedLanguages, id: \.self) { language in
-                                        Text(language)
-                                            .font(.custom("Doto-Black_Bold", size: 14))
-                                            .padding(.vertical, 10)
-                                            .padding(.horizontal, 18)
-                                            .background(Color.black)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(githubLanguageColors[language] ?? Color.gray, lineWidth: 2)
-                                                    .shadow(color: (githubLanguageColors[language] ?? Color.gray).opacity(0.9), radius: 6)
-                                            )
-                                            .foregroundColor(githubLanguageColors[language] ?? .white)
-                                    }
-                                    NavigationLink(destination: PreferencesView(isOnboarding: false)) {
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 16, weight: .bold))
-                                            .padding(.vertical, 10)
-                                            .padding(.horizontal, 20)
-                                            .background(Color.black)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.white.opacity(0.4), lineWidth: 2)
-                                                    .shadow(color: Color.white.opacity(0.6), radius: 6)
-                                            )
-                                            .foregroundColor(.white)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-
-                    Divider()
-                        .background(Color.white.opacity(0.2))
-
                     // Lastly Starred Section
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Lastly Starred Repositories")
