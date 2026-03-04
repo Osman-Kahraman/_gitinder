@@ -102,7 +102,7 @@ struct ProfileView: View {
                                     Button(role: .destructive) {
                                         auth.unstarRepository(owner: repo.owner, repo: repo.name)
                                     } label: {
-                                        Label("Unstar", systemImage: "star.slash")
+                                        Label("", systemImage: "star.slash")
                                     }
                                     .tint(.red.opacity(0.8))
                                 }
@@ -144,13 +144,27 @@ struct ProfileView: View {
         .background(Color.black)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                .stroke(Color.white.opacity(0))
         )
-        .cornerRadius(12)
     }
 }
 
 #Preview {
-    ProfileView()
-        .environmentObject(AuthManager())
+    PreviewWrapper()
+}
+
+private struct PreviewWrapper: View {
+    @StateObject private var auth = AuthManager()
+
+    var body: some View {
+        ProfileView()
+            .environmentObject(auth)
+            .onAppear {
+                auth.starredRepos = [
+                    Repo(name: "swift", description: "The Swift Programming Language", star: 65000, fork: 10000, issues: 5000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "apple"),
+                    Repo(name: "tensorflow", description: "An end-to-end open source machine learning platform", star: 180000, fork: 88000, issues: 9000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "tensorflow"),
+                    Repo(name: "linux", description: "Linux kernel source tree", star: 170000, fork: 55000, issues: 300, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "torvalds")
+                ]
+            }
+    }
 }
