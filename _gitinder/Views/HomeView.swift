@@ -23,6 +23,7 @@ struct Repo: Identifiable {
     let lastUpdate: String
     let languagesURL: String
     var languages: [Language]
+    let owner: String
 }
 
 struct HomeView: View {
@@ -122,6 +123,10 @@ struct HomeView: View {
                             },
                             onSwipeRight: {
                                 lastSwipeDirection = 1
+
+                                let repo = repos[currentIndex]
+                                auth.starRepository(owner: repo.owner, repo: repo.name)
+
                                 nextCard()
                             },
                             onDragChanged: { value in
@@ -267,7 +272,8 @@ struct HomeView: View {
                     issues: item["open_issues_count"] as? Int ?? 0,
                     lastUpdate: item["updated_at"] as? String ?? "",
                     languagesURL: item["languages_url"] as? String ?? "",
-                    languages: []
+                    languages: [],
+                    owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
                 )
             }
 

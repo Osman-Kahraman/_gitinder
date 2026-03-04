@@ -149,13 +149,53 @@ class AuthManager: ObservableObject {
                     issues: item["open_issues_count"] as? Int ?? 0,
                     lastUpdate: "",
                     languagesURL: "",
-                    languages: []
+                    languages: [],
+                    owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
                 )
             }
 
             DispatchQueue.main.async {
                 self.starredRepos = repos
             }
+        }.resume()
+    }
+    
+    func starRepository(owner: String, repo: String) {
+        guard let token = accessToken else { return }
+
+        let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
+        
+        guard let url = URL(string: urlString) else { return }
+        
+        print("-URL -----------------------------------\n\(url)\n----------------------------------------")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("0", forHTTPHeaderField: "Content-Length")
+
+        // GitHub expects an empty body for PUT star requests
+        request.httpBody = Data()
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+
+            if let error = error {
+                print("Star error:", error)
+                return
+            }
+
+            if let http = response as? HTTPURLResponse {
+                print("Star status:", http.statusCode)
+            }
+
+            if let data = data,
+               let body = String(data: data, encoding: .utf8),
+               !body.isEmpty {
+                print("GitHub response:", body)
+            }
+
         }.resume()
     }
 }
