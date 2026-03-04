@@ -18,11 +18,13 @@ class AuthManager: ObservableObject {
     @Published var starredRepos: [Repo] = []
     @Published var preferences: UserPreferences?
     @Published var needsOnboarding: Bool = false
+    @Published var starLimit: Int = 100
 
     private let tokenKey = "github_access_token"
 
     init() {
         loadPreferences()
+        loadStarLimit()
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
             self.accessToken = savedToken
@@ -68,6 +70,17 @@ class AuthManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "user_preferences"),
            let prefs = try? JSONDecoder().decode(UserPreferences.self, from: data) {
             self.preferences = prefs
+        }
+    }
+
+    func saveStarLimit(_ limit: Int) {
+        self.starLimit = limit
+        UserDefaults.standard.set(limit, forKey: "user_star_limit")
+    }
+
+    func loadStarLimit() {
+        if let saved = UserDefaults.standard.value(forKey: "user_star_limit") as? Int {
+            self.starLimit = saved
         }
     }
 

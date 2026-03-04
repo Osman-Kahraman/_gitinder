@@ -28,7 +28,7 @@ struct ContentView: View {
         Group {
             if auth.isLoggedIn {
                 if auth.needsOnboarding {
-                    PreferencesView(isOnboarding: true)
+                    LanguagesView(isOnboarding: true)
                         .tint(.white)
                 } else {
                     TabView {

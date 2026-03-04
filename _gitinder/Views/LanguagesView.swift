@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct PreferencesView: View {
+struct LanguagesView: View {
 
     @EnvironmentObject var auth: AuthManager
     @Environment(\.dismiss) private var dismiss
@@ -105,6 +105,6 @@ struct PreferencesView: View {
 }
 
 #Preview {
-    PreferencesView(isOnboarding: false)
+    LanguagesView(isOnboarding: false)
         .environmentObject(AuthManager())
 }

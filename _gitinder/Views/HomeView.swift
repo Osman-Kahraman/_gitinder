@@ -34,6 +34,7 @@ struct HomeView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var lastSwipeDirection: CGFloat = 0
     @State private var showLanguagePreferences = false
+    @State private var showStarPreferences = false
 
     var body: some View {
         ZStack {
@@ -70,6 +71,31 @@ struct HomeView: View {
                             Spacer()
 
                             Image(systemName: showLanguagePreferences ? "chevron.up" : "chevron.down")
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
+                        )
+                        .cornerRadius(14)
+                        .padding(.horizontal)
+                    }
+                    Button {
+                        withAnimation(.spring()) {
+                            showStarPreferences.toggle()
+                        }
+                    } label: {
+                        HStack {
+                            Text("Star Limit")
+                                .foregroundColor(.white)
+                                .font(.custom("Doto-Black_ExtraBold", size: 14))
+
+                            Spacer()
+
+                            Image(systemName: showStarPreferences ? "chevron.up" : "chevron.down")
                                 .foregroundColor(.white)
                         }
                         .padding(.horizontal, 16)
@@ -126,7 +152,14 @@ struct HomeView: View {
         .animation(.easeOut(duration: 0.6), value: dragOffset)
         .animation(.spring(), value: currentIndex)
         .sheet(isPresented: $showLanguagePreferences) {
-            PreferencesView()
+            LanguagesView()
+                .environmentObject(auth)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.black)
+        }
+        .sheet(isPresented: $showStarPreferences) {
+            StarLimitView()
                 .environmentObject(auth)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
@@ -137,6 +170,10 @@ struct HomeView: View {
         }
         .onReceive(auth.$preferences) { _ in
             // Refetch whenever preferences object changes
+            fetchTrendingRepositories()
+        }
+        .onReceive(auth.$starLimit) { _ in
+            // Refetch whenever star limit changes
             fetchTrendingRepositories()
         }
     }
@@ -162,7 +199,7 @@ struct HomeView: View {
     private func fetchTrendingRepositories() {
         guard let prefs = auth.preferences,
               !prefs.selectedLanguages.isEmpty else {
-            fetchSingleQuery(query: "stars:<100")
+            fetchSingleQuery(query: "stars:<\(auth.starLimit)")
             return
         }
 
@@ -174,7 +211,7 @@ struct HomeView: View {
         self.currentIndex = 0
 
         for language in languages {
-            let query = "language:\(language) stars:<100"
+            let query = "language:\(language) stars:<\(auth.starLimit)"
             fetchSingleQuery(query: query)
         }
     }

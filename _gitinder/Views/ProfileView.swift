@@ -11,21 +11,6 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthManager
 
-    private let githubLanguageColors: [String: Color] = [
-        "Swift": Color(red: 1.0, green: 0.45, blue: 0.0),
-        "Python": Color(red: 0.21, green: 0.36, blue: 0.63),
-        "JavaScript": Color(red: 0.95, green: 0.85, blue: 0.2),
-        "TypeScript": Color(red: 0.2, green: 0.45, blue: 0.85),
-        "Java": Color(red: 0.69, green: 0.13, blue: 0.13),
-        "C++": Color(red: 0.0, green: 0.48, blue: 0.8),
-        "C": Color(red: 0.33, green: 0.33, blue: 0.33),
-        "Go": Color(red: 0.0, green: 0.68, blue: 0.71),
-        "Rust": Color(red: 0.87, green: 0.4, blue: 0.2),
-        "Kotlin": Color(red: 0.6, green: 0.2, blue: 0.8),
-        "PHP": Color(red: 0.47, green: 0.53, blue: 0.8),
-        "Dart": Color(red: 0.0, green: 0.6, blue: 0.8)
-    ]
-
     var body: some View {
         ZStack {
             Color.black
