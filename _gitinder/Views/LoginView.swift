@@ -12,7 +12,6 @@ struct LoginView: View {
     @EnvironmentObject var auth: AuthManager
     @State private var username: String = ""
     @State private var animatedText: String = ""
-    private let words: [String] = ["_gitinder"]
     @State private var currentWordIndex: Int = 0
     @State private var isDeleting: Bool = false
 

@@ -111,7 +111,7 @@ class AuthManager: ObservableObject {
 
     func startOAuthLogin() {
         let clientID = "Ov23liHKmlUxODlmiXfE"
-        let scope = "read:user user:email"
+        let scope = "read:user user:email public_repo"
         let redirectURI = "gitinder://callback"
 
         let authURLString = "https://github.com/login/oauth/authorize?client_id=\(clientID)&scope=\(scope)&redirect_uri=\(redirectURI)"

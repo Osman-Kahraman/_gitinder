@@ -1,5 +1,5 @@
 //
-//  PreferencesView.swift
+//  LanguagesView.swift
 //  _gitinder
 //
 //  Created by Osman Kahraman on 2026-02-27.

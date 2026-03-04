@@ -88,6 +88,9 @@ struct ProfileView: View {
                 .padding(.bottom, 100)
             }
         }
+        .onAppear {
+            auth.fetchStarredRepositories()
+        }
         .font(.custom("Doto-Black_Bold", size: 16))
         .foregroundColor(.white)
     }
