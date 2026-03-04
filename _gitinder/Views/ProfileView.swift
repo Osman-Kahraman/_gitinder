@@ -10,6 +10,8 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthManager
+    @State private var localStarredRepos: [Repo] = []
+    @State private var pendingUnstars: [(owner: String, repo: String)] = []
 
     var body: some View {
         ZStack {
@@ -89,18 +91,21 @@ struct ProfileView: View {
                         .foregroundColor(.white)
                 ) {
 
-                    if auth.starredRepos.isEmpty {
+                    if localStarredRepos.isEmpty {
                         Text("No starred repositories yet.")
                             .foregroundColor(.gray)
                             .font(.custom("Doto-Black_Bold", size: 13))
                             .listRowBackground(Color.black)
                     } else {
-                        ForEach(auth.starredRepos, id: \.name) { repo in
+                        ForEach(localStarredRepos, id: \.name) { repo in
                             pinnedRepoCard(name: repo.name, description: repo.description)
                                 .listRowBackground(Color.black)
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
-                                        auth.unstarRepository(owner: repo.owner, repo: repo.name)
+                                        if let index = localStarredRepos.firstIndex(where: { $0.name == repo.name && $0.owner == repo.owner }) {
+                                            localStarredRepos.remove(at: index)
+                                            pendingUnstars.append((owner: repo.owner, repo: repo.name))
+                                        }
                                     } label: {
                                         Label("", systemImage: "star.slash")
                                     }
@@ -116,6 +121,16 @@ struct ProfileView: View {
         }
         .onAppear {
             auth.fetchStarredRepositories()
+            localStarredRepos = auth.starredRepos
+        }
+        .onReceive(auth.$starredRepos) { repos in
+            localStarredRepos = repos
+        }
+        .onDisappear {
+            for item in pendingUnstars {
+                auth.unstarRepository(owner: item.owner, repo: item.repo)
+            }
+            pendingUnstars.removeAll()
         }
         .font(.custom("Doto-Black_Bold", size: 16))
         .foregroundColor(.white)
