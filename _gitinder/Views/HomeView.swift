@@ -192,8 +192,19 @@ struct HomeView: View {
 
     func nextCard() {
         withAnimation(.spring()) {
-            if currentIndex < repos.count - 1 {
-                currentIndex += 1
+            var nextIndex = currentIndex + 1
+
+            // Skip any repos that are already blacklisted
+            while nextIndex < repos.count {
+                let repo = repos[nextIndex]
+                if !auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name) {
+                    break
+                }
+                nextIndex += 1
+            }
+
+            if nextIndex < repos.count {
+                currentIndex = nextIndex
             }
         }
     }
@@ -211,6 +222,11 @@ struct HomeView: View {
     }
 
     private func fetchTrendingRepositories() {
+        if auth.starLimit == -1 {
+            fetchMyRepositories()
+            return
+        }
+        
         guard let prefs = auth.preferences,
               !prefs.selectedLanguages.isEmpty else {
             fetchSingleQuery(query: "stars:<\(auth.starLimit)")
@@ -309,6 +325,42 @@ struct HomeView: View {
                 for repo in filteredBlacklist.prefix(5) {
                     fetchLanguages(for: repo)
                 }
+            }
+        }.resume()
+    }
+    
+    private func fetchMyRepositories() {
+        guard let url = URL(string: "https://api.github.com/users/Osman-Kahraman/repos?per_page=100&sort=updated") else { return }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                return
+            }
+
+            let repos: [Repo] = json.compactMap { item in
+                guard let name = item["name"] as? String else { return nil }
+
+                return Repo(
+                    name: name,
+                    description: item["description"] as? String ?? "My project",
+                    star: item["stargazers_count"] as? Int ?? 0,
+                    fork: item["forks_count"] as? Int ?? 0,
+                    issues: item["open_issues_count"] as? Int ?? 0,
+                    lastUpdate: item["updated_at"] as? String ?? "",
+                    languagesURL: item["languages_url"] as? String ?? "",
+                    languages: [],
+                    owner: "Osman-Kahraman"
+                )
+            }
+
+            DispatchQueue.main.async {
+                self.allRepos = repos
+                self.repos = repos
+                self.currentIndex = 0
             }
         }.resume()
     }
