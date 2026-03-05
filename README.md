@@ -1,8 +1,8 @@
 # _gitinder
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4f5c198c-bb2d-4697-9009-e200f9cfae41" width="300"/>
-  <img src="https://github.com/user-attachments/assets/319aa85b-753a-47f1-b434-1c174f8a9bc7" width="300"/>
+  <img src="https://github.com/user-attachments/assets/6ccc2add-2491-4e49-b416-fcb622732e32" width="300"/>
+  <img src="https://github.com/user-attachments/assets/25a113fa-d57a-458c-8f0c-4100c2d896d8" width="300"/>
 </p>
 
 Swipe-based GitHub repository discovery app built with SwiftUI.
