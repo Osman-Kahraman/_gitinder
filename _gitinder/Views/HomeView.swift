@@ -129,7 +129,7 @@ struct HomeView: View {
                                 lastSwipeDirection = 1
 
                                 let repo = repos[currentIndex]
-                                auth.starRepository(owner: repo.owner, repo: repo.name)
+                                auth.addLocalStar(repo: repo)
 
                                 nextCard()
                             },
@@ -184,6 +184,9 @@ struct HomeView: View {
         .onReceive(auth.$starLimit) { _ in
             // Refetch whenever star limit changes
             fetchTrendingRepositories()
+        }
+        .onDisappear {
+            auth.syncStarChanges()
         }
     }
 

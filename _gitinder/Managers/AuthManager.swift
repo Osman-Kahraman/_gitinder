@@ -16,6 +16,9 @@ class AuthManager: ObservableObject {
     @Published var following: Int = 0
     @Published var accessToken: String?
     @Published var starredRepos: [Repo] = []
+    @Published var localStarredRepos: [Repo] = []
+    @Published var pendingStars: [(owner: String, repo: String)] = []
+    @Published var pendingUnstars: [(owner: String, repo: String)] = []
     @Published var preferences: UserPreferences?
     @Published var needsOnboarding: Bool = false
     @Published var starLimit: Int = 100
@@ -147,7 +150,7 @@ class AuthManager: ObservableObject {
     
     func fetchStarredRepositories() {
         guard let token = accessToken,
-              let url = URL(string: "https://api.github.com/user/starred?per_page=5") else { return }
+              let url = URL(string: "https://api.github.com/user/starred?per_page=25") else { return }
 
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -181,6 +184,9 @@ class AuthManager: ObservableObject {
 
             DispatchQueue.main.async {
                 self.starredRepos = repos
+                if self.localStarredRepos.isEmpty {
+                    self.localStarredRepos = self.starredRepos
+                }
             }
         }.resume()
     }
@@ -243,15 +249,35 @@ class AuthManager: ObservableObject {
 
             if let http = response as? HTTPURLResponse {
                 print("Unstar status:", http.statusCode)
-
-                if http.statusCode == 204 {
-                    DispatchQueue.main.async {
-                        // Refresh starred repos list after successful unstar
-                        self.fetchStarredRepositories()
-                    }
-                }
             }
 
         }.resume()
+    }
+    
+    func addLocalStar(repo: Repo) {
+        if !localStarredRepos.contains(where: { $0.owner == repo.owner && $0.name == repo.name }) {
+            localStarredRepos.insert(repo, at: 0)
+            pendingStars.append((owner: repo.owner, repo: repo.name))
+        }
+    }
+
+    func removeLocalStar(owner: String, repo: String) {
+        if let index = localStarredRepos.firstIndex(where: { $0.owner == owner && $0.name == repo }) {
+            localStarredRepos.remove(at: index)
+            pendingUnstars.append((owner: owner, repo: repo))
+        }
+    }
+
+    func syncStarChanges() {
+        for item in pendingStars {
+            starRepository(owner: item.owner, repo: item.repo)
+        }
+
+        for item in pendingUnstars {
+            unstarRepository(owner: item.owner, repo: item.repo)
+        }
+
+        pendingStars.removeAll()
+        pendingUnstars.removeAll()
     }
 }
