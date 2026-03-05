@@ -17,7 +17,6 @@ struct ProfileView: View {
                 .ignoresSafeArea()
 
             List {
-
                 // Header Section
                 Section {
                     VStack(spacing: 12) {
@@ -84,11 +83,14 @@ struct ProfileView: View {
 
                 // Starred Repositories Section
                 Section(header:
-                    Text("Lastly Starred Repositories")
-                        .font(.custom("Doto-Black_Bold", size: 18))
+                    Text("Lastly Starred Repositories (\(auth.localStarredRepos.count))")
+                        .font(.custom("Doto-Black_Bold", size: 19))
                         .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 6)
+                        .background(Color.black)
+                        .listRowInsets(EdgeInsets())
                 ) {
-
                     if auth.localStarredRepos.isEmpty {
                         Text("No starred repositories yet.")
                             .foregroundColor(.gray)
@@ -111,8 +113,8 @@ struct ProfileView: View {
                 }
 
             }
-            .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .background(Color.black.ignoresSafeArea())
         }
         .onAppear {
             auth.fetchStarredRepositories()
@@ -168,7 +170,7 @@ private struct PreviewWrapper: View {
         ProfileView()
             .environmentObject(auth)
             .onAppear {
-                auth.starredRepos = [
+                auth.localStarredRepos = [
                     Repo(name: "swift", description: "The Swift Programming Language", star: 65000, fork: 10000, issues: 5000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "apple"),
                     Repo(name: "tensorflow", description: "An end-to-end open source machine learning platform", star: 180000, fork: 88000, issues: 9000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "tensorflow"),
                     Repo(name: "linux", description: "Linux kernel source tree", star: 170000, fork: 55000, issues: 300, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "torvalds")
