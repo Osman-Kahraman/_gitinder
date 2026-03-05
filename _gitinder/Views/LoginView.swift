@@ -46,6 +46,17 @@ struct LoginView: View {
                     }
                 }
                 .padding(.horizontal, 32)
+
+                HStack(spacing: 4) {
+                    Text("built by")
+                        .font(.custom("Doto-Black_Bold", size: 10))
+                        .foregroundColor(.gray)
+
+                    Link("@Osman-Kahraman", destination: URL(string: "https://github.com/Osman-Kahraman")!)
+                        .font(.custom("Doto-Black_Bold", size: 10))
+                        .foregroundColor(.white)
+                }
+                .padding(.top, 16)
             }
         }
         .onAppear {

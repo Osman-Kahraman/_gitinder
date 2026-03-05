@@ -45,11 +45,6 @@ class AuthManager: ObservableObject {
         }
     }
 
-    func login(username: String) {
-        self.username = username
-        self.isLoggedIn = true
-    }
-
     func logout() {
         KeychainManager.shared.delete(key: tokenKey)
 
@@ -143,6 +138,11 @@ class AuthManager: ObservableObject {
                 self.followers = json["followers"] as? Int ?? 0
                 self.following = json["following"] as? Int ?? 0
                 self.isLoggedIn = true
+
+                if self.preferences == nil {
+                    self.needsOnboarding = true
+                }
+
                 self.fetchStarredRepositories()
             }
         }.resume()
