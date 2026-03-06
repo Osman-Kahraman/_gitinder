@@ -1,9 +1,10 @@
 # _gitinder
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/6ccc2add-2491-4e49-b416-fcb622732e32" width="300"/>
-  <img src="https://github.com/user-attachments/assets/25a113fa-d57a-458c-8f0c-4100c2d896d8" width="300"/>
+  <img width="300" src="https://github.com/user-attachments/assets/12ae8f92-fa17-4976-ad88-9b07b6f85808" />
+  <img width="300" src="https://github.com/user-attachments/assets/11fc0db8-2a55-4634-bf62-4072ccaf3aef" />
 </p>
+
 
 Swipe-based GitHub repository discovery app built with SwiftUI.
 
@@ -61,33 +62,6 @@ This keeps secrets off-device and production-safe.
 
 ---
 
-## Installation
-
-1. Clone the repository:
-   
-```sh
-git clone https://github.com/Osman-Kahraman/_gitinder.git
-```
-
-3. Open in Xcode
-4. Configure your GitHub OAuth credentials
-5. Run on simulator
-
----
-
-## Requirements
-
-To run _gitinder_ locally, you will need:
-
-### Development Environment
-
-- macOS (latest stable version recommended)
-- Xcode 15+
-- iOS 17+ Simulator or physical device
-- Swift 5.9+
-
----
-
 ## Project Structure
 
 ```
@@ -127,9 +101,75 @@ _gitinder/
 
 ---
 
+## Installation
+
+1. Clone the repository:
+   
+```sh
+git clone https://github.com/Osman-Kahraman/_gitinder.git
+```
+
+3. Open in Xcode
+4. Configure your GitHub OAuth credentials
+5. Run on simulator
+
+---
+
+## Requirements
+
+To run _gitinder_ locally, you will need:
+
+### Development Environment
+
+- macOS (latest stable version recommended)
+- Xcode 15+
+- iOS 17+ Simulator or physical device
+- Swift 5.9+
+
+---
+
 ## Usage
 
-Come on man! Just click **_gitinder.xcodeproj** file and that's all...
+Before running the app, you must configure your GitHub OAuth credentials.
+
+### 1. Configure OAuth Credentials
+
+Navigate to the backend folder and update the .env file with your GitHub OAuth credentials:
+
+```sh
+CLIENT_ID="YOUR-GITHUB-OAUTH-APP-ID"
+CLIENT_SECRET="YOUR-GITHUB-OAUTH-APP-SECRET"
+```
+
+You should create a GitHub OAuth App here:
+https://github.com/settings/developers
+
+Set the callback URL to:
+```sh
+gitinder://callback
+```
+
+### 2. Start the Backend Server
+
+Navigate to the backend directory and start the OAuth server:
+
+```sh
+cd oauth
+npm install
+node server.js
+```
+
+### 3. Run the iOS App
+
+Open the project in Xcode:
+
+```sh
+_gitinder.xcodeproj
+```
+
+Run the app on the simulator or your device.
+
+*After logging in with GitHub, you can start swiping through repositories just like Tinder.*
 
 ---
 
