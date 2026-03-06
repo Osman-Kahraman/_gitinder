@@ -45,7 +45,19 @@ Before running the project, configure the OAuth backend.
 
 1. Add GitHub OAuth credentials
 
-Edit the `.env` file in the `oauth` folder:
+Copy `.env.example` file to `env` for local development.
+
+```bash
+cp oauth/.env.example outh/.env
+```
+
+Edit the `.env` file in the `oauth` folder. 
+
+```bash
+nano oauth/.env
+```
+
+Fill with your credentials:
 ```sh
 CLIENT_ID="YOUR-GITHUB-OAUTH-APP-ID"
 CLIENT_SECRET="YOUR-GITHUB-OAUTH-APP-SECRET"
