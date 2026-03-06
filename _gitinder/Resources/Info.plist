@@ -25,5 +25,7 @@
 	<array>
 		<string>Doto-VariableFont_ROND,wght.ttf</string>
 	</array>
+	<key>CLIENT_ID</key>
+	<string>$(CLIENT_ID)</string>
 </dict>
 </plist>

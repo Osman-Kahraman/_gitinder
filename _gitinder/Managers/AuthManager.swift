@@ -108,7 +108,10 @@ class AuthManager: ObservableObject {
     }
 
     func startOAuthLogin() {
-        let clientID = "Ov23liHKmlUxODlmiXfE"
+        guard let clientID = Bundle.main.object(forInfoDictionaryKey: "CLIENT_ID") as? String else {
+            print("Missing CLIENT_ID in Info.plist")
+            return
+        }
         let scope = "read:user user:email public_repo"
         let redirectURI = "gitinder://callback"
 

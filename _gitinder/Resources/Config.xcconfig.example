@@ -1,0 +1,8 @@
+//
+//  Config.xcconfig
+//  _gitinder
+//
+//  Created by Osman Kahraman on 2026-03-06.
+//
+
+CLIENT_ID = YOUR-GITHUB-OAUTH-APP-ID
