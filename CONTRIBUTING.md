@@ -1,4 +1,4 @@
-# Contributing to PyGameEngine
+# Contributing to _gitinder
 
 Thank you for your interest in contributing to _gitinder! Contributions are welcome! 
 This project is open to improvements, bug fixes, and new ideas. If you have any suggestions or improvements, 
@@ -98,4 +98,4 @@ Some ideas that could improve the project:
 
 ---
 
-Thank you for helping improve _gitinder.
+Thank you for helping improve `_gitinder`.
