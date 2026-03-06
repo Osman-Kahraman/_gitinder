@@ -105,7 +105,7 @@ _gitinder/
 
 1. Clone the repository:
    
-```sh
+```bash
 git clone https://github.com/Osman-Kahraman/_gitinder.git
 ```
 
@@ -136,7 +136,7 @@ Before running the app, you must configure your GitHub OAuth credentials.
 
 Navigate to the backend folder and update the .env file with your GitHub OAuth credentials:
 
-```sh
+```bash
 CLIENT_ID="YOUR-GITHUB-OAUTH-APP-ID"
 CLIENT_SECRET="YOUR-GITHUB-OAUTH-APP-SECRET"
 ```
@@ -145,7 +145,7 @@ You should create a GitHub OAuth App here:
 https://github.com/settings/developers
 
 Set the callback URL to:
-```sh
+```bash
 gitinder://callback
 ```
 
@@ -153,7 +153,7 @@ gitinder://callback
 
 Navigate to the backend directory and start the OAuth server:
 
-```sh
+```bash
 cd oauth
 npm install
 node server.js
