@@ -14,17 +14,29 @@
 		714D70D02F4FBED00020292C /* Exceptions for "_gitinder" folder in "_gitinder" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Resources/Config.xcconfig,
 				Resources/Info.plist,
 			);
 			target = 714D70B92F4FA2060020292C /* _gitinder */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		719524D52F5AA0D7007FD30F /* Exceptions for "_gitinder" folder in "Compile Sources" phase from "_gitinder" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 714D70B62F4FA2060020292C /* Sources */;
+			membershipExceptions = (
+				Resources/Config.xcconfig,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		714D70BC2F4FA2060020292C /* _gitinder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				714D70D02F4FBED00020292C /* Exceptions for "_gitinder" folder in "_gitinder" target */,
+				719524D52F5AA0D7007FD30F /* Exceptions for "_gitinder" folder in "Compile Sources" phase from "_gitinder" target */,
 			);
 			path = _gitinder;
 			sourceTree = "<group>";
@@ -140,6 +152,8 @@
 /* Begin XCBuildConfiguration section */
 		714D70C62F4FA2070020292C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 714D70BC2F4FA2060020292C /* _gitinder */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -203,6 +217,8 @@
 		};
 		714D70C72F4FA2070020292C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 714D70BC2F4FA2060020292C /* _gitinder */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -259,6 +275,8 @@
 		};
 		714D70C92F4FA2070020292C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 714D70BC2F4FA2060020292C /* _gitinder */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -288,6 +306,8 @@
 		};
 		714D70CA2F4FA2070020292C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 714D70BC2F4FA2060020292C /* _gitinder */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

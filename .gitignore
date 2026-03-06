@@ -3,6 +3,7 @@ venv/
 env/
 ENV/
 oauth/.env
+_gitinder/Resources/Config.xcconfig
 .DS_Store
 .vscode/
 .idea/
