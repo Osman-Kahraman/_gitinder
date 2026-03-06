@@ -55,43 +55,6 @@ To solve this:
 
 This keeps secrets off-device and production-safe.
 
-## Project Structure
-
-```
-_gitinder/
-├── _gitinder.xcodeproj/              # Xcode project configuration
-│
-├── _gitinder/                        # iOS Application Target
-│
-│   ├── App/                          # Application Entry Layer
-│   │   └── _gitinderApp.swift        # App entry point & environment setup
-│   │
-│   ├── Managers/                     # Business Logic Layer
-│   │   └── AuthManager.swift         # GitHub authentication & user state
-│   │
-│   ├── Views/                        # UI Layer (SwiftUI)
-│   │   ├── ContentView.swift         # Root view (auth routing)
-│   │   ├── HomeView.swift            # Swipe-based repo discovery screen
-│   │   ├── LoginView.swift           # GitHub OAuth login screen
-│   │   ├── ProfileView.swift         # GitHub profile screen
-│   │   │
-│   │   └── Components/               # Reusable UI Components
-│   │       └── SwipeCardView.swift   # Repository swipe card component
-│   │
-│   ├── Resources/                    # Static Resources & Config
-│   │   ├── Assets.xcassets           # Images, icons, colors
-│   │   ├── Fonts/                    # Custom Doto font files
-│   │   ├── Preview Content/          # SwiftUI preview assets
-│   └── └── Info.plist                # App configuration
-│
-├── .github/                          # CI/CD Configuration
-│   └── workflows/
-│       └── ios.yml                   # GitHub Actions pipeline
-│
-├── README.md                         # Project documentation
-└── LICENSE                           # License file
-```
-
 ## Installation
 
 1. Clone the repository:
