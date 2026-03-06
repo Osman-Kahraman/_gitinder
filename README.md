@@ -171,4 +171,7 @@ Run the app on the simulator or your device.
   <b>Give the repo a star...</b>
   <br>
   <b>Or swipe left...</b>
+  <br>
+  <br>
+  <b>Official iOS app coming soon on the App Store.</b>
 </p>
