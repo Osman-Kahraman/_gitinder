@@ -2,6 +2,7 @@ venv/
 .venv/
 env/
 ENV/
+oauth/.env
 .DS_Store
 .vscode/
 .idea/

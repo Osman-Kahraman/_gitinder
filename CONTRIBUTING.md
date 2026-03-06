@@ -1,6 +1,6 @@
 # Contributing to _gitinder
 
-Thank you for your interest in contributing to _gitinder! Contributions are welcome! 
+Thank you for your interest in contributing to `_gitinder`! Contributions are welcome! 
 This project is open to improvements, bug fixes, and new ideas. If you have any suggestions or improvements, 
 please create an issue or submit a pull request.
 
