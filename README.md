@@ -1,6 +1,12 @@
 # _gitinder
 
 <p align="center">
+  <img src="https://img.shields.io/badge/iOS-SwiftUI-blue">
+  <img src="https://img.shields.io/badge/API-GitHub-black">
+  <img src="https://img.shields.io/badge/License-MIT-green">
+</p>
+
+<p align="center">
   <img width="300" src="https://github.com/user-attachments/assets/12ae8f92-fa17-4976-ad88-9b07b6f85808" />
   <img width="300" src="https://github.com/user-attachments/assets/11fc0db8-2a55-4634-bf62-4072ccaf3aef" />
 </p>
