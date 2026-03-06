@@ -5,4 +5,4 @@
 //  Created by Osman Kahraman on 2026-03-06.
 //
 
-GITHUB_CLIENT_ID = YOUR_CLIENT_ID
+CLIENT_ID = YOUR-GITHUB-OAUTH-APP-ID

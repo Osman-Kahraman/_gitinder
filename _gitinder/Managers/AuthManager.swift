@@ -108,8 +108,8 @@ class AuthManager: ObservableObject {
     }
 
     func startOAuthLogin() {
-        guard let clientID = Bundle.main.object(forInfoDictionaryKey: "GITHUB_CLIENT_ID") as? String else {
-            print("Missing GITHUB_CLIENT_ID in Info.plist")
+        guard let clientID = Bundle.main.object(forInfoDictionaryKey: "CLIENT_ID") as? String else {
+            print("Missing CLIENT_ID in Info.plist")
             return
         }
         let scope = "read:user user:email public_repo"

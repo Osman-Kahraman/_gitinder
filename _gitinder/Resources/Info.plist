@@ -25,7 +25,7 @@
 	<array>
 		<string>Doto-VariableFont_ROND,wght.ttf</string>
 	</array>
-	<key>GITHUB_CLIENT_ID</key>
-	<string>$(GITHUB_CLIENT_ID)</string>
+	<key>CLIENT_ID</key>
+	<string>$(CLIENT_ID)</string>
 </dict>
 </plist>
