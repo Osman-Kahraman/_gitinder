@@ -42,6 +42,25 @@ When searching for useful repositories, you often get:
 - Dark cyber-inspired UI
 - Smooth SwiftUI animations
 
+## Documentation
+
+For detailed documentation, architecture explanations, and development setup, please visit the project Wiki.
+
+<p align="center">
+  <a href="https://github.com/Osman-Kahraman/_gitinder/wiki">
+    View the _gitinder Wiki
+  </a>
+</p>
+
+The Wiki includes:
+
+- Installation guide
+- OAuth authentication flow
+- Project architecture
+- GitHub API usage
+- Configuration details
+- Contribution guidelines
+
 ## Authentication Architecture
 
 Mobile apps cannot securely store a GitHub client secret.
