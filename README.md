@@ -18,7 +18,18 @@ Instead of scrolling through endless lists, you swipe.
   <b>Left → Skip</b>
 </p>
 
----
+## Why _gitinder?
+
+GitHub’s list-based discovery can feel overwhelming.
+
+When searching for useful repositories, you often get:
+
+- **Too many results**
+- **Too much noise**
+- **Not enough focus**
+
+`_gitinder` solves this by presenting one repository at a time in a clean, interactive card interface. Which means less scrolling and more discovering.
+
 
 ## Features
 
@@ -30,22 +41,6 @@ Instead of scrolling through endless lists, you swipe.
 - GitHub profile integration
 - Dark cyber-inspired UI
 - Smooth SwiftUI animations
-
----
-
-## Why _gitinder?
-
-GitHub’s list-based discovery can feel overwhelming.
-
-When searching for useful repositories, you often get:
-
-- **Too many results**
-- **Too much noise**
-- **Not enough focus**
-
-__gitinder_ solves this by presenting one repository at a time in a clean, interactive card interface. Which means less scrolling and more discovering.
-
----
 
 ## Authentication Architecture
 
@@ -59,8 +54,6 @@ To solve this:
 4. The token is returned to the app.
 
 This keeps secrets off-device and production-safe.
-
----
 
 ## Project Structure
 
@@ -99,8 +92,6 @@ _gitinder/
 └── LICENSE                           # License file
 ```
 
----
-
 ## Installation
 
 1. Clone the repository:
@@ -113,8 +104,6 @@ git clone https://github.com/Osman-Kahraman/_gitinder.git
 4. Configure your GitHub OAuth credentials
 5. Run on simulator
 
----
-
 ## Requirements
 
 To run _gitinder_ locally, you will need:
@@ -125,8 +114,6 @@ To run _gitinder_ locally, you will need:
 - Xcode 15+
 - iOS 17+ Simulator or physical device
 - Swift 5.9+
-
----
 
 ## Usage
 
@@ -141,8 +128,6 @@ Set the callback URL to:
 ```bash
 gitinder://callback
 ```
-
----
 
 Once you have created the OAuth app and obtained your Client ID and Client Secret, switch to your terminal and navigate to the project folder.
 
@@ -191,8 +176,6 @@ _gitinder.xcodeproj
 Run the app on the simulator or your device.
 
 *Once everything is configured, you can log in with GitHub and start discovering repositories with swipe gestures.*
-
----
 
 ## If You Like It
 

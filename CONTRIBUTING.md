@@ -4,8 +4,6 @@ Thank you for your interest in contributing to `_gitinder`! Contributions are we
 This project is open to improvements, bug fixes, and new ideas. If you have any suggestions or improvements, 
 please create an issue or submit a pull request.
 
----
-
 ## Getting Started
 
 1.	Fork the repository
@@ -36,8 +34,6 @@ git push origin feature/your-feature-name
 ```
 
 6.	Open a Pull Request.
-
----
 
 ## Development Setup
 
@@ -81,8 +77,6 @@ _gitinder.xcodeproj
 
 Run the app using Xcode.
 
----
-
 ## Contribution Guidelines
 
 Please follow these rules when contributing:
@@ -98,8 +92,6 @@ Fix: correct repository language parsing
 Add: swipe animation improvement
 Refactor: AuthManager cleanup
 ```
-
----
 
 ## Feature Ideas
 
