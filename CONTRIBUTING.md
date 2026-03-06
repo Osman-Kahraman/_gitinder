@@ -43,27 +43,29 @@ git push origin feature/your-feature-name
 
 Before running the project, configure the OAuth backend.
 
-1. Add GitHub OAuth credentials
+### 1. Add GitHub OAuth credentials
 
-Copy `.env.example` file to `env` for local development.
+Copy `.env.example` file to `env` and `Config.xcconfig.example` file to `Config.xcconfig` for local development.
 
 ```bash
 cp oauth/.env.example outh/.env
+cp _gitinder/Resources/Config.xcconfig.example _gitinder/Resources/Config.xcconfig
 ```
 
-Edit the `.env` file in the `oauth` folder. 
+Edit the `.env` and `Config.xcconfig` file. 
 
 ```bash
 nano oauth/.env
+nano _gitinder/Resources/Config.xcconfig
 ```
 
 Fill with your credentials:
 ```sh
-CLIENT_ID="YOUR-GITHUB-OAUTH-APP-ID"
-CLIENT_SECRET="YOUR-GITHUB-OAUTH-APP-SECRET"
+CLIENT_ID=YOUR-GITHUB-OAUTH-APP-ID
+CLIENT_SECRET=YOUR-GITHUB-OAUTH-APP-SECRET
 ```
 
-2. Start the backend server
+### 2. Start the backend server
 
 ```bash
 cd oauth
@@ -71,7 +73,7 @@ npm install
 node server.js
 ```
 
-3. Run the iOS app
+### 3. Run the iOS app
 
 ```sh
 _gitinder.xcodeproj

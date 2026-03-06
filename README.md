@@ -130,16 +130,9 @@ To run _gitinder_ locally, you will need:
 
 ## Usage
 
-Before running the app, you must configure your GitHub OAuth credentials.
+Before running the app, you must configure the GitHub OAuth credentials and start the backend authentication server.
 
 ### 1. Configure OAuth Credentials
-
-Navigate to the backend folder and update the .env file with your GitHub OAuth credentials:
-
-```bash
-CLIENT_ID="YOUR-GITHUB-OAUTH-APP-ID"
-CLIENT_SECRET="YOUR-GITHUB-OAUTH-APP-SECRET"
-```
 
 You should create a GitHub OAuth App here:
 https://github.com/settings/developers
@@ -147,6 +140,34 @@ https://github.com/settings/developers
 Set the callback URL to:
 ```bash
 gitinder://callback
+```
+
+---
+
+Once you have created the OAuth app and obtained your Client ID and Client Secret, switch to your terminal and navigate to the project folder.
+
+```bash
+cd _gitinder
+```
+
+Copy the example configuration files for local development:
+
+```bash
+cp oauth/.env.example oauth/.env
+cp _gitinder/Resources/Config.xcconfig.example _gitinder/Resources/Config.xcconfig
+```
+
+Open the files and fill in your GitHub OAuth credentials.
+
+```bash
+nano oauth/.env
+nano _gitinder/Resources/Config.xcconfig
+```
+
+Add your credentials:
+```bash
+CLIENT_ID=YOUR-GITHUB-OAUTH-APP-ID
+CLIENT_SECRET=YOUR-GITHUB-OAUTH-APP-SECRET
 ```
 
 ### 2. Start the Backend Server
@@ -169,7 +190,7 @@ _gitinder.xcodeproj
 
 Run the app on the simulator or your device.
 
-*After logging in with GitHub, you can start swiping through repositories just like Tinder.*
+*Once everything is configured, you can log in with GitHub and start discovering repositories with swipe gestures.*
 
 ---
 
