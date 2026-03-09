@@ -22,6 +22,7 @@ class AuthManager: ObservableObject {
     @Published var preferences: UserPreferences?
     @Published var needsOnboarding: Bool = false
     @Published var starLimit: Int = 100
+    @Published var recentlyUpdatedDays: Int = 0
     @Published var blacklistedRepos: Set<String> = []
     private let blacklistKey = "repo_blacklist"
 
@@ -30,6 +31,7 @@ class AuthManager: ObservableObject {
     init() {
         loadPreferences()
         loadStarLimit()
+        loadRecentlyUpdatedDays()
         loadBlacklist()
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
@@ -82,6 +84,17 @@ class AuthManager: ObservableObject {
     func loadStarLimit() {
         if let saved = UserDefaults.standard.value(forKey: "user_star_limit") as? Int {
             self.starLimit = saved
+        }
+    }
+
+    func saveRecentlyUpdatedDays(_ days: Int) {
+        self.recentlyUpdatedDays = days
+        UserDefaults.standard.set(days, forKey: "user_recently_updated_days")
+    }
+
+    func loadRecentlyUpdatedDays() {
+        if let saved = UserDefaults.standard.value(forKey: "user_recently_updated_days") as? Int {
+            self.recentlyUpdatedDays = saved
         }
     }
 

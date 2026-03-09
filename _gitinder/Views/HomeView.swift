@@ -36,6 +36,7 @@ struct HomeView: View {
     @State private var lastSwipeDirection: CGFloat = 0
     @State private var showLanguagePreferences = false
     @State private var showStarPreferences = false
+    @State private var showUpdatedPreferences = false
 
     var body: some View {
         ZStack {
@@ -56,59 +57,90 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             VStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.gray)
-                    Button {
-                        withAnimation(.spring()) {
-                            showLanguagePreferences.toggle()
-                        }
-                    } label: {
-                        HStack {
-                            Text("Languages")
-                                .foregroundColor(.white)
-                                .font(.custom("Doto-Black_ExtraBold", size: 14))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundColor(.gray)
 
-                            Spacer()
+                        Button {
+                            withAnimation(.spring()) {
+                                showLanguagePreferences.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text("Languages")
+                                    .foregroundColor(.white)
+                                    .font(.custom("Doto-Black_ExtraBold", size: 14))
 
-                            Image(systemName: showLanguagePreferences ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.white)
+                                Spacer()
+
+                                Image(systemName: showLanguagePreferences ? "chevron.up" : "chevron.down")
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.black)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
+                            )
+                            .cornerRadius(14)
+                            .frame(width: 150)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.black)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
-                        )
-                        .cornerRadius(14)
-                        .padding(.horizontal)
+
+                        Button {
+                            withAnimation(.spring()) {
+                                showStarPreferences.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text("Star Limit")
+                                    .foregroundColor(.white)
+                                    .font(.custom("Doto-Black_ExtraBold", size: 14))
+
+                                Spacer()
+
+                                Image(systemName: showStarPreferences ? "chevron.up" : "chevron.down")
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.black)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
+                            )
+                            .cornerRadius(14)
+                            .frame(width: 150)
+                        }
+
+                        Button {
+                            withAnimation(.spring()) {
+                                showUpdatedPreferences.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text("Last Updated")
+                                    .foregroundColor(.white)
+                                    .font(.custom("Doto-Black_ExtraBold", size: 14))
+
+                                Spacer()
+
+                                Image(systemName: showUpdatedPreferences ? "chevron.up" : "chevron.down")
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.black)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
+                            )
+                            .cornerRadius(14)
+                            .frame(width: 180)
+                        }
                     }
-                    Button {
-                        withAnimation(.spring()) {
-                            showStarPreferences.toggle()
-                        }
-                    } label: {
-                        HStack {
-                            Text("Star Limit")
-                                .foregroundColor(.white)
-                                .font(.custom("Doto-Black_ExtraBold", size: 14))
-
-                            Spacer()
-
-                            Image(systemName: showStarPreferences ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.black)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
-                        )
-                        .cornerRadius(14)
-                        .padding(.horizontal)
-                    }
+                    .padding(.horizontal)
                 }
 
                 Spacer()
@@ -170,7 +202,13 @@ struct HomeView: View {
         .sheet(isPresented: $showStarPreferences) {
             StarLimitView()
                 .environmentObject(auth)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.black)
+        }
+        .sheet(isPresented: $showUpdatedPreferences) {
+            RecentlyUpdatedView()
+                .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.black)
         }
@@ -183,6 +221,10 @@ struct HomeView: View {
         }
         .onReceive(auth.$starLimit) { _ in
             // Refetch whenever star limit changes
+            fetchTrendingRepositories()
+        }
+        .onReceive(auth.$recentlyUpdatedDays) { _ in
+            // Refetch whenever recently updated day changes
             fetchTrendingRepositories()
         }
         .onDisappear {
@@ -229,7 +271,24 @@ struct HomeView: View {
         
         guard let prefs = auth.preferences,
               !prefs.selectedLanguages.isEmpty else {
-            fetchSingleQuery(query: "stars:<\(auth.starLimit)")
+            var query = "stars:<\(auth.starLimit)"
+
+            if auth.recentlyUpdatedDays > 0 {
+                let date = Calendar.current.date(
+                    byAdding: .day,
+                    value: -auth.recentlyUpdatedDays,
+                    to: Date()
+                ) ?? Date()
+
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+
+                let dateString = formatter.string(from: date)
+
+                query += " pushed:>\(dateString)"
+            }
+
+            fetchSingleQuery(query: query)
             return
         }
 
@@ -241,14 +300,30 @@ struct HomeView: View {
         self.currentIndex = 0
 
         for language in languages {
-            let query = "language:\(language) stars:<\(auth.starLimit)"
+            var query = "language:\(language) stars:<\(auth.starLimit)"
+
+            // Apply recently updated filter
+            if auth.recentlyUpdatedDays > 0 {
+                let date = Calendar.current.date(
+                    byAdding: .day,
+                    value: -auth.recentlyUpdatedDays,
+                    to: Date()
+                ) ?? Date()
+
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+
+                let dateString = formatter.string(from: date)
+
+                query += " pushed:>\(dateString)"
+            }
+
             fetchSingleQuery(query: query)
         }
     }
 
     private func fetchSingleQuery(query: String) {
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        
         guard let url = URL(string: "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=50") else { return }
 
         var request = URLRequest(url: url)
