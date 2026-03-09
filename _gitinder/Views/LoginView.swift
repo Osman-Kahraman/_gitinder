@@ -21,6 +21,11 @@ struct LoginView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 28) {
+                Image("logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 160, height: 160)
+                
                 Text(animatedText)
                     .font(.custom("Doto-Black_ExtraBold", size: 32))
                     .foregroundColor(.white)
