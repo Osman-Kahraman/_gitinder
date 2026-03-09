@@ -18,7 +18,8 @@ struct RecentlyUpdatedView: View {
         ("Any time", 0),
         ("Last 24 hours", 1),
         ("Last 7 days", 7),
-        ("Last 30 days", 30)
+        ("Last 30 days", 30),
+        ("Last 60 days", 60)
     ]
 
     var body: some View {
