@@ -8,23 +8,19 @@
 import SwiftUI
 
 struct RecentlyUpdatedView: View {
-
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var auth: AuthManager
-
     @State private var selection: Int = 0
 
     let options: [(String, Int)] = [
         ("Any time", 0),
         ("Last 24 hours", 1),
         ("Last 7 days", 7),
-        ("Last 30 days", 30),
-        ("Last 60 days", 60)
+        ("Last 30 days", 30)
     ]
 
     var body: some View {
         VStack(spacing: 24) {
-
             Text("Recently Updated")
                 .font(.custom("Doto-Black_Bold", size: 24))
                 .foregroundColor(.white)
