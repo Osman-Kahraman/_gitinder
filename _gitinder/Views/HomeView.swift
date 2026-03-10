@@ -74,8 +74,10 @@ struct HomeView: View {
 
                                 Spacer()
 
-                                Image(systemName: showLanguagePreferences ? "chevron.up" : "chevron.down")
+                                Image(systemName: "chevron.down")
                                     .foregroundColor(.white)
+                                    .rotationEffect(.degrees(showLanguagePreferences ? 180 : 0))
+                                    .animation(.easeInOut(duration: 0.3), value: showLanguagePreferences)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -100,8 +102,10 @@ struct HomeView: View {
 
                                 Spacer()
 
-                                Image(systemName: showStarPreferences ? "chevron.up" : "chevron.down")
+                                Image(systemName: "chevron.down")
                                     .foregroundColor(.white)
+                                    .rotationEffect(.degrees(showStarPreferences ? 180 : 0))
+                                    .animation(.easeInOut(duration: 0.3), value: showStarPreferences)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -126,8 +130,10 @@ struct HomeView: View {
 
                                 Spacer()
 
-                                Image(systemName: showUpdatedPreferences ? "chevron.up" : "chevron.down")
+                                Image(systemName: "chevron.down")
                                     .foregroundColor(.white)
+                                    .rotationEffect(.degrees(showUpdatedPreferences ? 180 : 0))
+                                    .animation(.easeInOut(duration: 0.3), value: showUpdatedPreferences)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
