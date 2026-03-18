@@ -17,34 +17,62 @@ Works alongside the existing `oauth/` backend for GitHub authentication.
 
 ## Setup
 
-### 1. Start the OAuth backend
+### 1. Create / update GitHub OAuth App
 
-Make sure the `oauth/` server is running (see root README):
+The web version requires a GitHub OAuth App with a **web callback URL**.
+
+> **Important:** The iOS app uses callback URL `gitinder://callback`. The web version needs `http://localhost:5173`. You can either:
+> - **Option A:** Update your existing OAuth App to add `http://localhost:5173` as the callback URL
+> - **Option B:** Create a new OAuth App specifically for the web version
+
+To create a new one:
+
+1. Go to https://github.com/settings/developers → **New OAuth App**
+2. **Application name:** `_gitinder-web` (or any name)
+3. **Homepage URL:** `http://localhost:5173`
+4. **Authorization callback URL:** `http://localhost:5173`
+5. Click **Register application**
+6. Copy your **Client ID** and generate a **Client Secret**
+
+### 2. Configure the OAuth backend
 
 ```bash
 cd oauth
+cp .env.example .env
+```
+
+Edit `oauth/.env`:
+
+```
+CLIENT_ID=<your Client ID>
+CLIENT_SECRET=<your Client Secret>
+```
+
+Start the backend:
+
+```bash
 npm install
 node server.js
 ```
 
-### 2. Configure environment
+The auth server will run on `http://localhost:3000`.
+
+### 3. Configure and run the web app
 
 ```bash
 cd web
 cp .env.example .env
 ```
 
-Edit `.env` and set your GitHub OAuth App Client ID:
+Edit `web/.env`:
 
 ```
-VITE_GITHUB_CLIENT_ID=YOUR-GITHUB-OAUTH-APP-ID
+VITE_GITHUB_CLIENT_ID=<same Client ID as oauth/.env>
 VITE_BACKEND_URL=http://localhost:3000
 VITE_GITHUB_REDIRECT_URI=http://localhost:5173
 ```
 
-> The `VITE_GITHUB_CLIENT_ID` must match the `CLIENT_ID` in `oauth/.env`.
-
-### 3. Install and run
+Install and run:
 
 ```bash
 npm install
@@ -52,6 +80,14 @@ npm run dev
 ```
 
 Open http://localhost:5173
+
+## Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| **404 on GitHub login** | `VITE_GITHUB_CLIENT_ID` is missing or invalid | Make sure `web/.env` exists with a valid Client ID |
+| **OAuth exchange failed** | Backend not running or `CLIENT_SECRET` is wrong | Check that `oauth/` server is running on port 3000 and `oauth/.env` has correct credentials |
+| **404 after GitHub redirect** | Callback URL mismatch | Ensure your OAuth App's callback URL is exactly `http://localhost:5173` |
 
 ## Features
 
@@ -63,13 +99,3 @@ Open http://localhost:5173
 - Keyboard shortcuts: `←` skip, `→` star
 - PWA support (installable on Android)
 - Dark cyber-inspired UI matching the iOS app
-
-## GitHub OAuth App Setup
-
-If you haven't created a GitHub OAuth App yet:
-
-1. Go to https://github.com/settings/developers → **New OAuth App**
-2. **Homepage URL:** `http://localhost:5173`
-3. **Authorization callback URL:** `http://localhost:5173`
-4. Copy Client ID → `web/.env` and `oauth/.env`
-5. Copy Client Secret → `oauth/.env`

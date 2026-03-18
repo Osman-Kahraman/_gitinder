@@ -10,7 +10,7 @@ import StarredDrawer from './components/StarredDrawer';
 import { RefreshCw } from 'lucide-react';
 
 export default function App() {
-  const { token, user, loading: authLoading, login, logout } = useAuth();
+  const { token, user, loading: authLoading, error: authError, login, logout } = useAuth();
   const {
     currentRepo,
     nextRepo,
@@ -38,7 +38,7 @@ export default function App() {
   }
 
   if (!token || !user) {
-    return <LoginScreen onLogin={login} />;
+    return <LoginScreen onLogin={login} error={authError} />;
   }
 
   return (

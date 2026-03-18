@@ -1,7 +1,8 @@
-import { Github } from 'lucide-react';
+import { Github, AlertTriangle } from 'lucide-react';
 
 interface Props {
   onLogin: () => void;
+  error?: string | null;
 }
 
 const ASCII_LOGO = `
@@ -12,12 +13,19 @@ const ASCII_LOGO = `
 |_|\\__|_|_| |_|\\__,_|\\___|_|   
 `;
 
-export default function LoginScreen({ onLogin }: Props) {
+export default function LoginScreen({ onLogin, error }: Props) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-bg px-6">
       <pre className="text-accent-green font-mono text-xs sm:text-sm leading-tight mb-8 select-none">
         {ASCII_LOGO}
       </pre>
+
+      {error && (
+        <div className="flex items-start gap-2 max-w-sm mb-6 p-3 rounded-lg border border-accent-red/30 bg-accent-red/5">
+          <AlertTriangle size={16} className="text-accent-red flex-shrink-0 mt-0.5" />
+          <p className="text-accent-red text-xs font-mono leading-relaxed">{error}</p>
+        </div>
+      )}
 
       <button
         onClick={onLogin}

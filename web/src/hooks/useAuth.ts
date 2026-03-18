@@ -5,10 +5,23 @@ import type { User } from '../types/github';
 
 const TOKEN_KEY = 'github_token';
 
+function getEnvVar(name: string): string {
+  const value = import.meta.env[name];
+  if (!value || value.startsWith('YOUR')) {
+    throw new Error(
+      `Missing environment variable: ${name}. ` +
+      `Copy web/.env.example to web/.env and fill in your credentials. ` +
+      `See web/README.md for setup instructions.`
+    );
+  }
+  return value;
+}
+
 export function useAuth() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -26,14 +39,19 @@ export function useAuth() {
 
   async function exchangeCode(code: string) {
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const backendUrl = getEnvVar('VITE_BACKEND_URL');
       const { data } = await axios.post(`${backendUrl}/oauth/exchange`, { code });
       const accessToken = data.access_token;
+      if (!accessToken) {
+        throw new Error('No access_token returned. Check that oauth/.env has the correct CLIENT_SECRET.');
+      }
       localStorage.setItem(TOKEN_KEY, accessToken);
       setToken(accessToken);
       await fetchUser(accessToken);
-    } catch {
-      console.error('OAuth exchange failed');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'OAuth exchange failed';
+      console.error('OAuth exchange failed:', msg);
+      setError(msg);
       setLoading(false);
     }
   }
@@ -51,17 +69,23 @@ export function useAuth() {
   }
 
   const login = useCallback(() => {
-    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI;
-    window.location.href =
-      `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=public_repo&redirect_uri=${redirectUri}`;
+    try {
+      const clientId = getEnvVar('VITE_GITHUB_CLIENT_ID');
+      const redirectUri = getEnvVar('VITE_GITHUB_REDIRECT_URI');
+      window.location.href =
+        `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=public_repo&redirect_uri=${redirectUri}`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Configuration error';
+      setError(msg);
+    }
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+    setError(null);
   }, []);
 
-  return { token, user, loading, login, logout };
+  return { token, user, loading, error, login, logout };
 }
