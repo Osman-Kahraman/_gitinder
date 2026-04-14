@@ -14,6 +14,8 @@ struct LoginView: View {
     @State private var animatedText: String = ""
     @State private var currentWordIndex: Int = 0
     @State private var isDeleting: Bool = false
+    @State private var showSafari = false
+    @State private var authURL: URL?
 
     var body: some View {
         ZStack {
@@ -36,7 +38,10 @@ struct LoginView: View {
 
                 VStack(spacing: 16) {
                     Button(action: {
-                        auth.startOAuthLogin()
+                        if let url = auth.getOAuthURL() {
+                            authURL = url
+                            showSafari = true
+                        }
                     }) {
                         HStack {
                             Image(systemName: "globe")
@@ -62,6 +67,11 @@ struct LoginView: View {
                         .foregroundColor(.white)
                 }
                 .padding(.top, 16)
+            }
+        }
+        .sheet(isPresented: $showSafari) {
+            if let url = authURL {
+                SafariView(url: url)
             }
         }
         .onAppear {

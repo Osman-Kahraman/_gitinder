@@ -120,19 +120,17 @@ class AuthManager: ObservableObject {
         }
     }
 
-    func startOAuthLogin() {
+    func getOAuthURL() -> URL? {
         guard let clientID = Bundle.main.object(forInfoDictionaryKey: "CLIENT_ID") as? String else {
             print("Missing CLIENT_ID in Info.plist")
-            return
+            return nil
         }
         let scope = "read:user user:email public_repo"
         let redirectURI = "gitinder://callback"
 
         let authURLString = "https://github.com/login/oauth/authorize?client_id=\(clientID)&scope=\(scope)&redirect_uri=\(redirectURI)"
 
-        if let url = URL(string: authURLString) {
-            UIApplication.shared.open(url)
-        }
+        return URL(string: authURLString)
     }
 
     func fetchGitHubUser() {
