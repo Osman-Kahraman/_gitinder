@@ -24,6 +24,7 @@ class AuthManager: ObservableObject {
     @Published var starLimit: Int = 100
     @Published var recentlyUpdatedDays: Int = 0
     @Published var blacklistedRepos: Set<String> = []
+    @Published var isDemoMode: Bool = false
     private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
@@ -45,6 +46,45 @@ class AuthManager: ObservableObject {
 
             fetchGitHubUser()
         }
+    }
+    
+    func loginAsDemo() {
+        self.isDemoMode = true
+        self.isLoggedIn = true
+        self.username = "demo-user"
+        self.avatarURL = nil
+        self.publicRepos = 42
+        self.followers = 10
+        self.following = 5
+        
+        loadDemoRepos()
+    }
+    
+    func loadDemoRepos() {
+        self.localStarredRepos = [
+            Repo(
+                name: "Awesome-SwiftUI",
+                description: "A curated list of awesome SwiftUI libraries",
+                star: 1200,
+                fork: 200,
+                issues: 12,
+                lastUpdate: "",
+                languagesURL: "",
+                languages: [],
+                owner: "demo"
+            ),
+            Repo(
+                name: "ML-Playground",
+                description: "Machine learning experiments",
+                star: 980,
+                fork: 150,
+                issues: 5,
+                lastUpdate: "",
+                languagesURL: "",
+                languages: [],
+                owner: "demo"
+            )
+        ]
     }
 
     func logout() {
@@ -134,6 +174,8 @@ class AuthManager: ObservableObject {
     }
 
     func fetchGitHubUser() {
+        if isDemoMode { return }
+        
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user") else { return }
 
@@ -163,6 +205,8 @@ class AuthManager: ObservableObject {
     }
     
     func fetchStarredRepositories() {
+        if isDemoMode { return }
+        
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user/starred?per_page=25") else { return }
 
@@ -206,6 +250,8 @@ class AuthManager: ObservableObject {
     }
     
     func starRepository(owner: String, repo: String) {
+        if isDemoMode { return }
+        
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
@@ -243,6 +289,8 @@ class AuthManager: ObservableObject {
     }
     
     func unstarRepository(owner: String, repo: String) {
+        if isDemoMode { return }
+        
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
