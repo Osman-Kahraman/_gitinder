@@ -290,6 +290,10 @@ struct HomeView: View {
 
             if nextIndex < repos.count {
                 currentIndex = nextIndex
+            } else {
+                // Reached end → fetch new data
+                print("Reached end of cards, fetching more...")
+                fetchTrendingRepositories()
             }
         }
     }
@@ -379,7 +383,6 @@ struct HomeView: View {
 
         // Authenticated request to increase rate limit
         if let token = auth.accessToken {
-            print(token)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
