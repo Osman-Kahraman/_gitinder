@@ -37,6 +37,8 @@ struct HomeView: View {
     @State private var showLanguagePreferences = false
     @State private var showStarPreferences = false
     @State private var showUpdatedPreferences = false
+    @State private var hasLoaded = false
+    @State private var timerStarted = false
 
     @State private var tipIndex = 0
 
@@ -246,8 +248,15 @@ struct HomeView: View {
                 .presentationBackground(.black)
         }
         .onAppear {
-            startTipRotation()
-            fetchTrendingRepositories()
+            if !timerStarted {
+                startTipRotation()
+                timerStarted = true
+            }
+            
+            if !hasLoaded {
+                fetchTrendingRepositories()
+                hasLoaded = true
+            }
         }
         .onReceive(auth.$preferences) { _ in
             // Refetch whenever preferences object changes
