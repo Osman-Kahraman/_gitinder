@@ -37,6 +37,22 @@ struct HomeView: View {
     @State private var showLanguagePreferences = false
     @State private var showStarPreferences = false
     @State private var showUpdatedPreferences = false
+    @State private var hasLoaded = false
+    @State private var timerStarted = false
+
+    @State private var tipIndex = 0
+
+    private let tips = [
+        "Tip: Swipe right to star repositories instantly.",
+        "Tip: Use filters to find repos in your favorite languages.",
+        "Tip: Recently updated repos are more active.",
+        "Tip: Smaller repos can hide real gems.",
+        "Tip: Try different star limits for better discovery."
+    ]
+
+    var loadingTip: String {
+        tips[tipIndex % tips.count]
+    }
 
     var body: some View {
         ZStack {
@@ -188,9 +204,22 @@ struct HomeView: View {
                         ))
                     }
                 } else {
-                    Text(":)")
-                        .foregroundColor(.white)
-                        .font(.custom("Doto-Black_Bold", size: 24))
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.4)
+
+                        Text("Finding great repositories for you...")
+                            .foregroundColor(.white)
+                            .font(.custom("Doto-Black_Bold", size: 16))
+
+                        Text(loadingTip)
+                            .foregroundColor(.gray)
+                            .font(.custom("Doto-Black", size: 13))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .transition(.opacity)
+                    }
                 }
 
                 Spacer()
@@ -219,7 +248,15 @@ struct HomeView: View {
                 .presentationBackground(.black)
         }
         .onAppear {
-            fetchTrendingRepositories()
+            if !timerStarted {
+                startTipRotation()
+                timerStarted = true
+            }
+            
+            if !hasLoaded {
+                fetchTrendingRepositories()
+                hasLoaded = true
+            }
         }
         .onReceive(auth.$preferences) { _ in
             // Refetch whenever preferences object changes
@@ -253,6 +290,10 @@ struct HomeView: View {
 
             if nextIndex < repos.count {
                 currentIndex = nextIndex
+            } else {
+                // Reached end → fetch new data
+                print("Reached end of cards, fetching more...")
+                fetchTrendingRepositories()
             }
         }
     }
@@ -305,26 +346,31 @@ struct HomeView: View {
         self.repos = []
         self.currentIndex = 0
 
-        for language in languages {
-            var query = "language:\(language) stars:<\(auth.starLimit)"
+        DispatchQueue.global().async {
+            for (_, language) in languages.enumerated() {
+                var query = "language:\(language) stars:<\(auth.starLimit)"
 
-            // Apply recently updated filter
-            if auth.recentlyUpdatedDays > 0 {
-                let date = Calendar.current.date(
-                    byAdding: .day,
-                    value: -auth.recentlyUpdatedDays,
-                    to: Date()
-                ) ?? Date()
+                if auth.recentlyUpdatedDays > 0 {
+                    let date = Calendar.current.date(
+                        byAdding: .day,
+                        value: -auth.recentlyUpdatedDays,
+                        to: Date()
+                    ) ?? Date()
 
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    let dateString = formatter.string(from: date)
 
-                let dateString = formatter.string(from: date)
+                    query += " pushed:>\(dateString)"
+                }
 
-                query += " pushed:>\(dateString)"
+                DispatchQueue.main.async {
+                    fetchSingleQuery(query: query)
+                }
+
+                // Throttle requests (0.5s delay)
+                Thread.sleep(forTimeInterval: 0.5)
             }
-
-            fetchSingleQuery(query: query)
         }
     }
 
@@ -348,6 +394,14 @@ struct HomeView: View {
 
             if let response = response as? HTTPURLResponse {
                 print("Status Code for \(query):", response.statusCode)
+            }
+            if let response = response as? HTTPURLResponse, response.statusCode == 403 {
+                print("⚠️ Rate limit hit. Retrying in 5 seconds...")
+
+                DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                    fetchSingleQuery(query: query)
+                }
+                return
             }
 
             guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -495,6 +549,13 @@ struct HomeView: View {
                 }
             }
         }.resume()
+    }
+    private func startTipRotation() {
+        Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+            withAnimation {
+                tipIndex += 1
+            }
+        }
     }
 }
 
