@@ -305,26 +305,31 @@ struct HomeView: View {
         self.repos = []
         self.currentIndex = 0
 
-        for language in languages {
-            var query = "language:\(language) stars:<\(auth.starLimit)"
+        DispatchQueue.global().async {
+            for (_, language) in languages.enumerated() {
+                var query = "language:\(language) stars:<\(auth.starLimit)"
 
-            // Apply recently updated filter
-            if auth.recentlyUpdatedDays > 0 {
-                let date = Calendar.current.date(
-                    byAdding: .day,
-                    value: -auth.recentlyUpdatedDays,
-                    to: Date()
-                ) ?? Date()
+                if auth.recentlyUpdatedDays > 0 {
+                    let date = Calendar.current.date(
+                        byAdding: .day,
+                        value: -auth.recentlyUpdatedDays,
+                        to: Date()
+                    ) ?? Date()
 
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    let dateString = formatter.string(from: date)
 
-                let dateString = formatter.string(from: date)
+                    query += " pushed:>\(dateString)"
+                }
 
-                query += " pushed:>\(dateString)"
+                DispatchQueue.main.async {
+                    fetchSingleQuery(query: query)
+                }
+
+                // Throttle requests (0.5s delay)
+                Thread.sleep(forTimeInterval: 0.5)
             }
-
-            fetchSingleQuery(query: query)
         }
     }
 
@@ -337,6 +342,7 @@ struct HomeView: View {
 
         // Authenticated request to increase rate limit
         if let token = auth.accessToken {
+            print(token)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
@@ -348,6 +354,14 @@ struct HomeView: View {
 
             if let response = response as? HTTPURLResponse {
                 print("Status Code for \(query):", response.statusCode)
+            }
+            if let response = response as? HTTPURLResponse, response.statusCode == 403 {
+                print("⚠️ Rate limit hit. Retrying in 5 seconds...")
+
+                DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                    fetchSingleQuery(query: query)
+                }
+                return
             }
 
             guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
