@@ -170,10 +170,11 @@ struct HomeView: View {
                 if currentIndex < repos.count {
                     ZStack {
                         SwipeCard(
-                            repo: repos[currentIndex],
+                            repo: repos.indices.contains(currentIndex) ? repos[currentIndex] : repos[0],
                             onSwipeLeft: {
                                 lastSwipeDirection = -1
                                 
+                                guard currentIndex < repos.count else { return }
                                 let repo = repos[currentIndex]
                                 auth.addRepoToBlacklist(owner: repo.owner, repo: repo.name)
                                 
@@ -182,6 +183,8 @@ struct HomeView: View {
                             onSwipeRight: {
                                 lastSwipeDirection = 1
 
+                                guard currentIndex < repos.count else { return }
+                                guard currentIndex >= 0 else { return }
                                 let repo = repos[currentIndex]
                                 auth.addLocalStar(repo: repo)
 
