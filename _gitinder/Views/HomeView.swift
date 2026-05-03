@@ -293,8 +293,14 @@ struct HomeView: View {
 
             if nextIndex < repos.count {
                 currentIndex = nextIndex
+
+                // Prefetch when approaching end (last 5 cards)
+                if currentIndex >= repos.count - 5 {
+                    print("Prefetch triggered...")
+                    fetchTrendingRepositories()
+                }
             } else {
-                // Reached end → fetch new data
+                // Fallback if somehow reached absolute end
                 print("Reached end of cards, fetching more...")
                 fetchTrendingRepositories()
             }
@@ -379,92 +385,81 @@ struct HomeView: View {
 
     private func fetchSingleQuery(query: String) {
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        guard let url = URL(string: "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=50") else { return }
 
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        // Fetch multiple pages per query (no OR change, keep your system)
+        for page in 1...3 {
+            guard let url = URL(string: "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=100&page=\(page)") else { continue }
 
-        // Authenticated request to increase rate limit
-        if let token = auth.accessToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            var request = URLRequest(url: url)
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+            if let token = auth.accessToken {
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            }
+
+            URLSession.shared.dataTask(with: request) { data, response, _ in
+                guard let data = data else { return }
+
+                if let response = response as? HTTPURLResponse {
+                    print("Status Code for page \(page):", response.statusCode)
+
+                    if response.statusCode == 403 {
+                        print("⚠️ Rate limit hit. Retrying in 5 seconds...")
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                            fetchSingleQuery(query: query)
+                        }
+                        return
+                    }
+                }
+
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let items = json["items"] as? [[String: Any]] else {
+                    return
+                }
+
+                let fetchedRepos: [Repo] = items.compactMap { item in
+                    guard let name = item["name"] as? String,
+                          let description = item["description"] as? String else {
+                        return nil
+                    }
+
+                    return Repo(
+                        name: name,
+                        description: description,
+                        star: item["stargazers_count"] as? Int ?? 0,
+                        fork: item["forks_count"] as? Int ?? 0,
+                        issues: item["open_issues_count"] as? Int ?? 0,
+                        lastUpdate: item["updated_at"] as? String ?? "",
+                        languagesURL: item["languages_url"] as? String ?? "",
+                        languages: [],
+                        owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
+                    )
+                }
+
+                DispatchQueue.main.async {
+                    let existingIDs = Set(self.allRepos.map { "\($0.owner)/\($0.name)" })
+                    let newUnique = fetchedRepos.filter {
+                        !existingIDs.contains("\($0.owner)/\($0.name)")
+                    }
+
+                    let filteredBlacklist = newUnique.filter {
+                        !auth.isRepoBlacklisted(owner: $0.owner, repo: $0.name)
+                    }
+
+                    self.allRepos.append(contentsOf: filteredBlacklist)
+
+                    self.repos = self.allRepos.shuffled()
+
+                    if self.currentIndex >= self.repos.count {
+                        self.currentIndex = 0
+                    }
+
+                    for repo in filteredBlacklist.prefix(5) {
+                        fetchLanguages(for: repo)
+                    }
+                }
+            }.resume()
         }
-
-        URLSession.shared.dataTask(with: request) { data, response, _ in
-            guard let data = data else {
-                print("No data returned for query:", query)
-                return
-            }
-
-            if let response = response as? HTTPURLResponse {
-                print("Status Code for \(query):", response.statusCode)
-            }
-            if let response = response as? HTTPURLResponse, response.statusCode == 403 {
-                print("⚠️ Rate limit hit. Retrying in 5 seconds...")
-
-                DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
-                    fetchSingleQuery(query: query)
-                }
-                return
-            }
-
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                print("X JSON parse failed for query:", query)
-                print(String(data: data, encoding: .utf8) ?? "No readable body")
-                return
-            }
-
-            guard let items = json["items"] as? [[String: Any]] else {
-                print("! No 'items' in response for query:", query)
-                print(json)
-                return
-            }
-
-            print("Query:", query, "| Repo Count:", items.count)
-
-            let fetchedRepos: [Repo] = items.compactMap { item in
-                guard let name = item["name"] as? String,
-                      let description = item["description"] as? String else {
-                    return nil
-                }
-
-                return Repo(
-                    name: name,
-                    description: description,
-                    star: item["stargazers_count"] as? Int ?? 0,
-                    fork: item["forks_count"] as? Int ?? 0,
-                    issues: item["open_issues_count"] as? Int ?? 0,
-                    lastUpdate: item["updated_at"] as? String ?? "",
-                    languagesURL: item["languages_url"] as? String ?? "",
-                    languages: [],
-                    owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
-                )
-            }
-
-            DispatchQueue.main.async {
-                let existingIDs = Set(self.allRepos.map { "\($0.owner)/\($0.name)" })
-                let newUnique = fetchedRepos.filter {
-                    !existingIDs.contains("\($0.owner)/\($0.name)")
-                }
-
-                let filteredBlacklist = newUnique.filter {
-                    !auth.isRepoBlacklisted(owner: $0.owner, repo: $0.name)
-                }
-
-                self.allRepos.append(contentsOf: filteredBlacklist)
-
-                // Shuffle to mix different language results
-                self.repos = self.allRepos.shuffled()
-
-                // Only reset index if this is the first load
-                if self.currentIndex >= self.repos.count {
-                    self.currentIndex = 0
-                }
-
-                for repo in filteredBlacklist.prefix(5) {
-                    fetchLanguages(for: repo)
-                }
-            }
-        }.resume()
     }
     
     private func fetchMyRepositories() {
