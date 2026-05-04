@@ -54,21 +54,6 @@ struct LoginView: View {
                         .foregroundColor(.black)
                         .cornerRadius(12)
                     }
-                    
-                    Button(action: {
-                        auth.loginAsDemo()
-                    }) {
-                        HStack {
-                            Image(systemName: "person.fill")
-                            Text("Continue as Guest")
-                                .font(.custom("Doto-Black_Bold", size: 16))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
                 }
                 .padding(.horizontal, 32)
 

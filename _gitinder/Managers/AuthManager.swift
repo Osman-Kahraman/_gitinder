@@ -48,45 +48,6 @@ class AuthManager: ObservableObject {
         }
     }
     
-    func loginAsDemo() {
-        self.isDemoMode = true
-        self.isLoggedIn = true
-        self.username = "demo-user"
-        self.avatarURL = nil
-        self.publicRepos = 42
-        self.followers = 10
-        self.following = 5
-        
-        loadDemoRepos()
-    }
-    
-    func loadDemoRepos() {
-        self.localStarredRepos = [
-            Repo(
-                name: "Awesome-SwiftUI",
-                description: "A curated list of awesome SwiftUI libraries",
-                star: 1200,
-                fork: 200,
-                issues: 12,
-                lastUpdate: "",
-                languagesURL: "",
-                languages: [],
-                owner: "demo"
-            ),
-            Repo(
-                name: "ML-Playground",
-                description: "Machine learning experiments",
-                star: 980,
-                fork: 150,
-                issues: 5,
-                lastUpdate: "",
-                languagesURL: "",
-                languages: [],
-                owner: "demo"
-            )
-        ]
-    }
-
     func logout() {
         KeychainManager.shared.delete(key: tokenKey)
 
