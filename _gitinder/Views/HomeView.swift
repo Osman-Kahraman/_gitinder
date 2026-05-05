@@ -7,25 +7,6 @@
 
 import SwiftUI
 
-struct Language {
-    let name: String
-    let percentage: Double
-    let color: Color
-}
-
-struct Repo: Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
-    let star: Int
-    let fork: Int
-    let issues: Int
-    let lastUpdate: String
-    let languagesURL: String
-    var languages: [Language]
-    let owner: String
-}
-
 struct HomeView: View {
     @EnvironmentObject var auth: AuthManager
     @State private var repos: [Repo] = []
@@ -286,7 +267,11 @@ struct HomeView: View {
 
     private func fetchTrendingRepositories() {
         if auth.starLimit == -1 {
-            fetchMyRepositories()
+            GitHubService.fetchUserRepos(username: "Osman-Kahraman") { repos in
+                self.allRepos = repos
+                self.repos = repos
+                self.currentIndex = 0
+            }
             return
         }
         
@@ -309,7 +294,32 @@ struct HomeView: View {
                 query += " pushed:>\(dateString)"
             }
 
-            fetchSingleQuery(query: query)
+            GitHubService.fetchRepos(
+                query: query,
+                token: auth.accessToken,
+                existing: self.allRepos,
+                blacklistCheck: { repo in
+                    auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name)
+                }
+            ) { newRepos in
+                self.allRepos.append(contentsOf: newRepos)
+                self.repos = self.allRepos.shuffled()
+
+                if self.currentIndex >= self.repos.count {
+                    self.currentIndex = 0
+                }
+
+                for repo in newRepos.prefix(5) {
+                    GitHubService.fetchLanguages(
+                        urlString: repo.languagesURL,
+                        token: auth.accessToken
+                    ) { languages in
+                        if let index = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
+                            self.allRepos[index].languages = languages
+                        }
+                    }
+                }
+            }
             return
         }
 
@@ -339,179 +349,38 @@ struct HomeView: View {
                 }
 
                 DispatchQueue.main.async {
-                    fetchSingleQuery(query: query)
+                    GitHubService.fetchRepos(
+                        query: query,
+                        token: auth.accessToken,
+                        existing: self.allRepos,
+                        blacklistCheck: { repo in
+                            auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name)
+                        }
+                    ) { newRepos in
+                        self.allRepos.append(contentsOf: newRepos)
+                        self.repos = self.allRepos.shuffled()
+
+                        if self.currentIndex >= self.repos.count {
+                            self.currentIndex = 0
+                        }
+
+                        for repo in newRepos.prefix(5) {
+                            GitHubService.fetchLanguages(
+                                urlString: repo.languagesURL,
+                                token: auth.accessToken
+                            ) { languages in
+                                if let index = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
+                                    self.allRepos[index].languages = languages
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // Throttle requests (0.5s delay)
                 Thread.sleep(forTimeInterval: 0.5)
             }
         }
-    }
-
-    private func fetchSingleQuery(query: String) {
-        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-
-        // Fetch multiple pages per query (no OR change, keep your system)
-        for page in 1...3 {
-            guard let url = URL(string: "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=100&page=\(page)") else { continue }
-
-            var request = URLRequest(url: url)
-            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-
-            if let token = auth.accessToken {
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
-
-            URLSession.shared.dataTask(with: request) { data, response, _ in
-                guard let data = data else { return }
-
-                if let response = response as? HTTPURLResponse {
-                    print("Status Code for page \(page):", response.statusCode)
-
-                    if response.statusCode == 403 {
-                        print("⚠️ Rate limit hit. Retrying in 5 seconds...")
-                        DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
-                            fetchSingleQuery(query: query)
-                        }
-                        return
-                    }
-                }
-
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let items = json["items"] as? [[String: Any]] else {
-                    return
-                }
-
-                let fetchedRepos: [Repo] = items.compactMap { item in
-                    guard let name = item["name"] as? String,
-                          let description = item["description"] as? String else {
-                        return nil
-                    }
-
-                    return Repo(
-                        name: name,
-                        description: description,
-                        star: item["stargazers_count"] as? Int ?? 0,
-                        fork: item["forks_count"] as? Int ?? 0,
-                        issues: item["open_issues_count"] as? Int ?? 0,
-                        lastUpdate: item["updated_at"] as? String ?? "",
-                        languagesURL: item["languages_url"] as? String ?? "",
-                        languages: [],
-                        owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
-                    )
-                }
-
-                DispatchQueue.main.async {
-                    let existingIDs = Set(self.allRepos.map { "\($0.owner)/\($0.name)" })
-                    let newUnique = fetchedRepos.filter {
-                        !existingIDs.contains("\($0.owner)/\($0.name)")
-                    }
-
-                    let filteredBlacklist = newUnique.filter {
-                        !auth.isRepoBlacklisted(owner: $0.owner, repo: $0.name)
-                    }
-
-                    self.allRepos.append(contentsOf: filteredBlacklist)
-
-                    self.repos = self.allRepos.shuffled()
-
-                    if self.currentIndex >= self.repos.count {
-                        self.currentIndex = 0
-                    }
-
-                    for repo in filteredBlacklist.prefix(5) {
-                        fetchLanguages(for: repo)
-                    }
-                }
-            }.resume()
-        }
-    }
-    
-    private func fetchMyRepositories() {
-        guard let url = URL(string: "https://api.github.com/users/Osman-Kahraman/repos?per_page=100&sort=updated") else { return }
-
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                return
-            }
-
-            let repos: [Repo] = json.compactMap { item in
-                guard let name = item["name"] as? String else { return nil }
-
-                return Repo(
-                    name: name,
-                    description: item["description"] as? String ?? "My project",
-                    star: item["stargazers_count"] as? Int ?? 0,
-                    fork: item["forks_count"] as? Int ?? 0,
-                    issues: item["open_issues_count"] as? Int ?? 0,
-                    lastUpdate: item["updated_at"] as? String ?? "",
-                    languagesURL: item["languages_url"] as? String ?? "",
-                    languages: [],
-                    owner: "Osman-Kahraman"
-                )
-            }
-
-            DispatchQueue.main.async {
-                self.allRepos = repos
-                self.repos = repos
-                self.currentIndex = 0
-            }
-        }.resume()
-    }
-
-    private func fetchLanguages(for repo: Repo) {
-        guard let url = URL(string: repo.languagesURL) else { return }
-
-        var request = URLRequest(url: url)
-
-        if let token = auth.accessToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data else {
-                print("X No language data for repo:", repo.name)
-                return
-            }
-
-            guard let languageDict = try? JSONSerialization.jsonObject(with: data) as? [String: Int] else {
-                print("x Language JSON parse failed for repo:", repo.name)
-                print(String(data: data, encoding: .utf8) ?? "No readable body")
-                return
-            }
-
-            print("Languages fetched for:", repo.name, "| Count:", languageDict.count)
-
-            let total = languageDict.values.reduce(0, +)
-
-            let mappedLanguages: [Language] = languageDict.map { key, value in
-                let percentage = total > 0 ? (Double(value) / Double(total)) * 100 : 0
-                let randomColor = Color(
-                    hue: Double.random(in: 0...1),
-                    saturation: 0.7,
-                    brightness: 0.9
-                )
-                return Language(name: key, percentage: percentage, color: randomColor)
-            }
-
-            DispatchQueue.main.async {
-                // Find repo by id instead of index (prevents mismatch after shuffle)
-                if let repoIndex = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
-                    self.allRepos[repoIndex].languages = mappedLanguages
-                }
-
-                let filtered = filterReposByPreferences(self.allRepos)
-                self.repos = filtered
-
-                if self.currentIndex >= self.repos.count {
-                    self.currentIndex = 0
-                }
-            }
-        }.resume()
     }
 }
 
