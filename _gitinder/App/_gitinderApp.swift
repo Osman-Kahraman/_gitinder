@@ -31,10 +31,12 @@ struct GitSwipeApp: App {
             return
         }
 
-        exchangeCodeForToken(code: code)
+        Task {
+            await exchangeCodeForToken(code: code)
+        }
     }
 
-    private func exchangeCodeForToken(code: String) {
+    private func exchangeCodeForToken(code: String) async {
         guard let url = URL(string: "https://gitinder-auth.onrender.com/oauth/exchange") else { return }
 
         var request = URLRequest(url: url)
@@ -44,19 +46,21 @@ struct GitSwipeApp: App {
         let body = ["code": code]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let accessToken = json["access_token"] as? String else {
                 print("Token exchange failed")
                 return
             }
 
-            DispatchQueue.main.async {
-                KeychainManager.shared.save(key: "github_access_token", value: accessToken)
+            KeychainManager.shared.save(key: "github_access_token", value: accessToken)
+            await MainActor.run {
                 auth.accessToken = accessToken
-                auth.fetchGitHubUser()
             }
-        }.resume()
+            await auth.fetchGitHubUser()
+        } catch {
+            print("Token exchange error:", error)
+        }
     }
 }

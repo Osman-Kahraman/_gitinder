@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 class AuthManager: ObservableObject {
     @Published var profile = UserProfile()
     @Published var accessToken: String?
@@ -33,7 +34,9 @@ class AuthManager: ObservableObject {
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
             self.accessToken = savedToken
-            fetchGitHubUser()
+            Task {
+                await fetchGitHubUser()
+            }
         }
     }
     
@@ -112,7 +115,7 @@ class AuthManager: ObservableObject {
         return URL(string: authURLString)
     }
 
-    func fetchGitHubUser() {
+    func fetchGitHubUser() async {
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user") else { return }
 
@@ -120,23 +123,23 @@ class AuthManager: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
-            DispatchQueue.main.async {
-                self.profile.username = json["login"] as? String ?? ""
-                self.profile.avatarURL = json["avatar_url"] as? String
-                self.profile.publicRepos = json["public_repos"] as? Int ?? 0
-                self.profile.followers = json["followers"] as? Int ?? 0
-                self.profile.following = json["following"] as? Int ?? 0
+            self.profile.username = json["login"] as? String ?? ""
+            self.profile.avatarURL = json["avatar_url"] as? String
+            self.profile.publicRepos = json["public_repos"] as? Int ?? 0
+            self.profile.followers = json["followers"] as? Int ?? 0
+            self.profile.following = json["following"] as? Int ?? 0
 
-                self.fetchStarredRepositories()
-            }
-        }.resume()
+            await fetchStarredRepositories()
+        } catch {
+            print("Fetch user error:", error)
+        }
     }
     
-    func fetchStarredRepositories() {
+    func fetchStarredRepositories() async {
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user/starred?per_page=25") else { return }
 
@@ -144,9 +147,9 @@ class AuthManager: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data,
-                  let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
                 print("Failed to parse starred repos")
                 return
             }
@@ -170,21 +173,21 @@ class AuthManager: ObservableObject {
                 )
             }
 
-            DispatchQueue.main.async {
-                self.starState.starredRepos = repos
-                if self.starState.localStarredRepos.isEmpty {
-                    self.starState.localStarredRepos = self.starState.starredRepos
-                }
+            self.starState.starredRepos = repos
+            if self.starState.localStarredRepos.isEmpty {
+                self.starState.localStarredRepos = self.starState.starredRepos
             }
-        }.resume()
+        } catch {
+            print("Fetch starred repos error:", error)
+        }
     }
     
-    func starRepository(owner: String, repo: String, completion: ((Bool) -> Void)? = nil) {
-        guard let token = accessToken else { return }
+    func starRepository(owner: String, repo: String) async -> Bool {
+        guard let token = accessToken else { return false }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
         
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else { return false }
 
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
@@ -196,43 +199,32 @@ class AuthManager: ObservableObject {
         // GitHub expects an empty body for PUT star requests
         request.httpBody = Data()
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-
-            if let error = error {
-                print("Star error:", error)
-                DispatchQueue.main.async {
-                    completion?(false)
-                }
-                return
-            }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
             if let http = response as? HTTPURLResponse {
                 print("Star status:", http.statusCode)
                 let isSuccess = (200...299).contains(http.statusCode)
 
-                DispatchQueue.main.async {
-                    completion?(isSuccess)
+                if let body = String(data: data, encoding: .utf8), !body.isEmpty {
+                    print("GitHub response:", body)
                 }
-            } else {
-                DispatchQueue.main.async {
-                    completion?(false)
-                }
+
+                return isSuccess
             }
 
-            if let data = data,
-               let body = String(data: data, encoding: .utf8),
-               !body.isEmpty {
-                print("GitHub response:", body)
-            }
-
-        }.resume()
+            return false
+        } catch {
+            print("Star error:", error)
+            return false
+        }
     }
     
-    func unstarRepository(owner: String, repo: String, completion: ((Bool) -> Void)? = nil) {
-        guard let token = accessToken else { return }
+    func unstarRepository(owner: String, repo: String) async -> Bool {
+        guard let token = accessToken else { return false }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else { return false }
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
@@ -240,30 +232,19 @@ class AuthManager: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-
-            if let error = error {
-                print("Unstar error:", error)
-                DispatchQueue.main.async {
-                    completion?(false)
-                }
-                return
-            }
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
 
             if let http = response as? HTTPURLResponse {
                 print("Unstar status:", http.statusCode)
-                let isSuccess = (200...299).contains(http.statusCode)
-
-                DispatchQueue.main.async {
-                    completion?(isSuccess)
-                }
-            } else {
-                DispatchQueue.main.async {
-                    completion?(false)
-                }
+                return (200...299).contains(http.statusCode)
             }
 
-        }.resume()
+            return false
+        } catch {
+            print("Unstar error:", error)
+            return false
+        }
     }
     
     func addLocalStar(repo: Repo) {
@@ -300,7 +281,12 @@ class AuthManager: ObservableObject {
 
     func syncStarChanges() {
         guard !isSyncingStars else { return }
+        Task {
+            await performStarSync()
+        }
+    }
 
+    private func performStarSync() async {
         let pendingStarsSnapshot = starState.pendingStars
         let pendingUnstarsSnapshot = starState.pendingUnstars
         let totalOperations = pendingStarsSnapshot.count + pendingUnstarsSnapshot.count
@@ -308,37 +294,23 @@ class AuthManager: ObservableObject {
         guard totalOperations > 0 else { return }
 
         isSyncingStars = true
-        var completedOperations = 0
-
-        let finishOperation: () -> Void = {
-            completedOperations += 1
-
-            if completedOperations == totalOperations {
-                self.isSyncingStars = false
-            }
-        }
+        defer { isSyncingStars = false }
 
         for item in pendingStarsSnapshot {
-            starRepository(owner: item.owner, repo: item.name) { success in
-                if success {
-                    self.starState.pendingStars.removeAll { pendingItem in
-                        pendingItem == item
-                    }
+            let success = await starRepository(owner: item.owner, repo: item.name)
+            if success {
+                starState.pendingStars.removeAll { pendingItem in
+                    pendingItem == item
                 }
-
-                finishOperation()
             }
         }
 
         for item in pendingUnstarsSnapshot {
-            unstarRepository(owner: item.owner, repo: item.name) { success in
-                if success {
-                    self.starState.pendingUnstars.removeAll { pendingItem in
-                        pendingItem == item
-                    }
+            let success = await unstarRepository(owner: item.owner, repo: item.name)
+            if success {
+                starState.pendingUnstars.removeAll { pendingItem in
+                    pendingItem == item
                 }
-
-                finishOperation()
             }
         }
     }

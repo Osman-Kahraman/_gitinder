@@ -117,7 +117,9 @@ struct ProfileView: View {
             .background(Color.black.ignoresSafeArea())
         }
         .onAppear {
-            auth.fetchStarredRepositories()
+            Task {
+                await auth.fetchStarredRepositories()
+            }
             
             // Only initialize local cache if it hasn't been populated yet
             if auth.starState.localStarredRepos.isEmpty {
