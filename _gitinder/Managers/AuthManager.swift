@@ -8,19 +8,22 @@
 import SwiftUI
 
 class AuthManager: ObservableObject {
-    @Published var isLoggedIn: Bool = false
     @Published var profile = UserProfile()
     @Published var accessToken: String?
-    @Published var starredRepos: [Repo] = []
-    @Published var localStarredRepos: [Repo] = []
-    @Published var pendingStars: [(owner: String, repo: String)] = []
-    @Published var pendingUnstars: [(owner: String, repo: String)] = []
-    @Published var preferences: UserPreferences?
-    @Published var needsOnboarding: Bool = false
+    @Published var starState = StarState()
+    @Published var preferences = UserPreferences()
     @Published var blacklistedRepos: Set<String> = []
     private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
+
+    var isLoggedIn: Bool {
+        accessToken != nil
+    }
+
+    var needsOnboarding: Bool {
+        isLoggedIn && preferences.selectedLanguages.isEmpty
+    }
 
     init() {
         loadPreferences()
@@ -28,13 +31,6 @@ class AuthManager: ObservableObject {
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
             self.accessToken = savedToken
-            self.isLoggedIn = true
-
-            // Only trigger onboarding if user is logged in AND has no preferences
-            if self.isLoggedIn && self.preferences == nil {
-                self.needsOnboarding = true
-            }
-
             fetchGitHubUser()
         }
     }
@@ -44,14 +40,12 @@ class AuthManager: ObservableObject {
 
         profile = UserProfile()
         self.accessToken = nil
-        self.preferences = nil
-        self.isLoggedIn = false
-        self.needsOnboarding = false
+        self.starState = StarState()
+        self.preferences = UserPreferences()
     }
     
     func savePreferences(_ preferences: UserPreferences) {
         self.preferences = preferences
-        self.needsOnboarding = false
         if let data = try? JSONEncoder().encode(preferences) {
             UserDefaults.standard.set(data, forKey: "user_preferences")
         }
@@ -65,13 +59,13 @@ class AuthManager: ObservableObject {
     }
 
     func saveStarLimit(_ limit: Int) {
-        var updatedPreferences = preferences ?? UserPreferences()
+        var updatedPreferences = preferences
         updatedPreferences.starLimit = limit
         savePreferences(updatedPreferences)
     }
 
     func saveRecentlyUpdatedDays(_ days: Int) {
-        var updatedPreferences = preferences ?? UserPreferences()
+        var updatedPreferences = preferences
         updatedPreferences.recentlyUpdatedDays = days
         savePreferences(updatedPreferences)
     }
@@ -129,11 +123,6 @@ class AuthManager: ObservableObject {
                 self.profile.publicRepos = json["public_repos"] as? Int ?? 0
                 self.profile.followers = json["followers"] as? Int ?? 0
                 self.profile.following = json["following"] as? Int ?? 0
-                self.isLoggedIn = true
-
-                if self.preferences == nil {
-                    self.needsOnboarding = true
-                }
 
                 self.fetchStarredRepositories()
             }
@@ -175,9 +164,9 @@ class AuthManager: ObservableObject {
             }
 
             DispatchQueue.main.async {
-                self.starredRepos = repos
-                if self.localStarredRepos.isEmpty {
-                    self.localStarredRepos = self.starredRepos
+                self.starState.starredRepos = repos
+                if self.starState.localStarredRepos.isEmpty {
+                    self.starState.localStarredRepos = self.starState.starredRepos
                 }
             }
         }.resume()
@@ -247,29 +236,29 @@ class AuthManager: ObservableObject {
     }
     
     func addLocalStar(repo: Repo) {
-        if !localStarredRepos.contains(where: { $0.owner == repo.owner && $0.name == repo.name }) {
-            localStarredRepos.insert(repo, at: 0)
-            pendingStars.append((owner: repo.owner, repo: repo.name))
+        if !starState.localStarredRepos.contains(where: { $0.owner == repo.owner && $0.name == repo.name }) {
+            starState.localStarredRepos.insert(repo, at: 0)
+            starState.pendingStars.append((owner: repo.owner, repo: repo.name))
         }
     }
 
     func removeLocalStar(owner: String, repo: String) {
-        if let index = localStarredRepos.firstIndex(where: { $0.owner == owner && $0.name == repo }) {
-            localStarredRepos.remove(at: index)
-            pendingUnstars.append((owner: owner, repo: repo))
+        if let index = starState.localStarredRepos.firstIndex(where: { $0.owner == owner && $0.name == repo }) {
+            starState.localStarredRepos.remove(at: index)
+            starState.pendingUnstars.append((owner: owner, repo: repo))
         }
     }
 
     func syncStarChanges() {
-        for item in pendingStars {
+        for item in starState.pendingStars {
             starRepository(owner: item.owner, repo: item.repo)
         }
 
-        for item in pendingUnstars {
+        for item in starState.pendingUnstars {
             unstarRepository(owner: item.owner, repo: item.repo)
         }
 
-        pendingStars.removeAll()
-        pendingUnstars.removeAll()
+        starState.pendingStars.removeAll()
+        starState.pendingUnstars.removeAll()
     }
 }

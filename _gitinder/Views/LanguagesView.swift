@@ -43,7 +43,7 @@ struct LanguagesView: View {
             }
 
             Button(action: {
-                var prefs = auth.preferences ?? UserPreferences()
+                var prefs = auth.preferences
                 prefs.selectedLanguages = Array(selected)
                 auth.savePreferences(prefs)
                 
@@ -66,9 +66,7 @@ struct LanguagesView: View {
         .padding()
         .background(Color.black.ignoresSafeArea())
         .onAppear {
-            if let existing = auth.preferences?.selectedLanguages {
-                selected = Set(existing)
-            }
+            selected = Set(auth.preferences.selectedLanguages)
         }
     }
 

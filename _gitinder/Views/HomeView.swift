@@ -246,7 +246,7 @@ struct HomeView: View {
     }
 
     func filterReposByPreferences(_ repos: [Repo]) -> [Repo] {
-        guard let prefs = auth.preferences else { return repos }
+        let prefs = auth.preferences
 
         return repos.filter { repo in
             let totalMatchPercentage = repo.languages
@@ -258,7 +258,7 @@ struct HomeView: View {
     }
 
     private func fetchTrendingRepositories() {
-        let preferences = auth.preferences ?? UserPreferences()
+        let preferences = auth.preferences
 
         if preferences.starLimit == -1 {
             GitHubService.fetchUserRepos(username: "Osman-Kahraman") { repos in
@@ -269,8 +269,7 @@ struct HomeView: View {
             return
         }
         
-        guard let prefs = auth.preferences,
-              !prefs.selectedLanguages.isEmpty else {
+        guard !preferences.selectedLanguages.isEmpty else {
             var query = "stars:<\(preferences.starLimit)"
 
             if preferences.recentlyUpdatedDays > 0 {
@@ -318,7 +317,7 @@ struct HomeView: View {
         }
 
         // Limit to first 5 languages to avoid GitHub boolean operator limit
-        let languages = Array(prefs.selectedLanguages.prefix(5))
+        let languages = Array(preferences.selectedLanguages.prefix(5))
 
         self.allRepos = []
         self.repos = []

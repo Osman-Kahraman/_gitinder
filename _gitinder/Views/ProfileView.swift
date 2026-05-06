@@ -83,7 +83,7 @@ struct ProfileView: View {
 
                 // Starred Repositories Section
                 Section(header:
-                    Text("Lastly Starred Repositories (\(auth.localStarredRepos.count))")
+                    Text("Lastly Starred Repositories (\(auth.starState.localStarredRepos.count))")
                         .font(.custom("Doto-Black_Bold", size: 19))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,13 +91,13 @@ struct ProfileView: View {
                         .background(Color.black)
                         .listRowInsets(EdgeInsets())
                 ) {
-                    if auth.localStarredRepos.isEmpty {
+                    if auth.starState.localStarredRepos.isEmpty {
                         Text("No starred repositories yet.")
                             .foregroundColor(.gray)
                             .font(.custom("Doto-Black_Bold", size: 13))
                             .listRowBackground(Color.black)
                     } else {
-                        ForEach(auth.localStarredRepos, id: \.name) { repo in
+                        ForEach(auth.starState.localStarredRepos) { repo in
                             pinnedRepoCard(name: repo.name, description: repo.description)
                                 .listRowBackground(Color.black)
                                 .swipeActions(edge: .trailing) {
@@ -120,8 +120,8 @@ struct ProfileView: View {
             auth.fetchStarredRepositories()
             
             // Only initialize local cache if it hasn't been populated yet
-            if auth.localStarredRepos.isEmpty {
-                auth.localStarredRepos = auth.starredRepos
+            if auth.starState.localStarredRepos.isEmpty {
+                auth.starState.localStarredRepos = auth.starState.starredRepos
             }
         }
         .onDisappear {
@@ -177,7 +177,7 @@ private struct PreviewWrapper: View {
                     followers: 2300,
                     following: 14
                 )
-                auth.localStarredRepos = [
+                auth.starState.localStarredRepos = [
                     Repo(name: "swift", description: "The Swift Programming Language", star: 65000, fork: 10000, issues: 5000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "apple"),
                     Repo(name: "tensorflow", description: "An end-to-end open source machine learning platform", star: 180000, fork: 88000, issues: 9000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "tensorflow"),
                     Repo(name: "linux", description: "Linux kernel source tree", star: 170000, fork: 55000, issues: 300, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "torvalds")

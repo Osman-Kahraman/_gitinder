@@ -49,7 +49,7 @@ struct StarLimitView: View {
         .padding()
         .background(Color.black.ignoresSafeArea())
         .onAppear {
-            selectedStarLimit = auth.preferences?.starLimit ?? UserPreferences().starLimit
+            selectedStarLimit = auth.preferences.starLimit
         }
         .presentationDetents([.fraction(0.3)])
         .presentationDragIndicator(.visible)
