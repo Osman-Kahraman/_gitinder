@@ -16,6 +16,7 @@ class AuthManager: ObservableObject {
     private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
+    private let preferencesKey = "user_preferences"
 
     var isLoggedIn: Bool {
         accessToken != nil
@@ -37,22 +38,22 @@ class AuthManager: ObservableObject {
     
     func logout() {
         KeychainManager.shared.delete(key: tokenKey)
+        clearPreferences()
 
         profile = UserProfile()
         self.accessToken = nil
         self.starState = StarState()
-        self.preferences = UserPreferences()
     }
     
     func savePreferences(_ preferences: UserPreferences) {
         self.preferences = preferences
         if let data = try? JSONEncoder().encode(preferences) {
-            UserDefaults.standard.set(data, forKey: "user_preferences")
+            UserDefaults.standard.set(data, forKey: preferencesKey)
         }
     }
 
     func loadPreferences() {
-        if let data = UserDefaults.standard.data(forKey: "user_preferences"),
+        if let data = UserDefaults.standard.data(forKey: preferencesKey),
            let prefs = try? JSONDecoder().decode(UserPreferences.self, from: data) {
             self.preferences = prefs
         }
@@ -90,6 +91,11 @@ class AuthManager: ObservableObject {
         if let saved = UserDefaults.standard.array(forKey: blacklistKey) as? [String] {
             blacklistedRepos = Set(saved)
         }
+    }
+
+    private func clearPreferences() {
+        preferences = UserPreferences()
+        UserDefaults.standard.removeObject(forKey: preferencesKey)
     }
 
     func getOAuthURL() -> URL? {
