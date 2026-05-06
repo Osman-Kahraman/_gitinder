@@ -245,18 +245,6 @@ struct HomeView: View {
         }
     }
 
-    func filterReposByPreferences(_ repos: [Repo]) -> [Repo] {
-        let prefs = auth.preferences
-
-        return repos.filter { repo in
-            let totalMatchPercentage = repo.languages
-                .filter { prefs.selectedLanguages.contains($0.name) }
-                .reduce(0) { $0 + $1.percentage }
-
-            return totalMatchPercentage >= 50
-        }
-    }
-
     private func fetchTrendingRepositories() {
         let preferences = auth.preferences
 

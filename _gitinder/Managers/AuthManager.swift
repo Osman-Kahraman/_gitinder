@@ -13,6 +13,7 @@ class AuthManager: ObservableObject {
     @Published var starState = StarState()
     @Published var preferences = UserPreferences()
     @Published var blacklistedRepos: Set<String> = []
+    @Published private(set) var isSyncingStars = false
     private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
@@ -178,7 +179,7 @@ class AuthManager: ObservableObject {
         }.resume()
     }
     
-    func starRepository(owner: String, repo: String) {
+    func starRepository(owner: String, repo: String, completion: ((Bool) -> Void)? = nil) {
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
@@ -199,11 +200,23 @@ class AuthManager: ObservableObject {
 
             if let error = error {
                 print("Star error:", error)
+                DispatchQueue.main.async {
+                    completion?(false)
+                }
                 return
             }
 
             if let http = response as? HTTPURLResponse {
                 print("Star status:", http.statusCode)
+                let isSuccess = (200...299).contains(http.statusCode)
+
+                DispatchQueue.main.async {
+                    completion?(isSuccess)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion?(false)
+                }
             }
 
             if let data = data,
@@ -215,7 +228,7 @@ class AuthManager: ObservableObject {
         }.resume()
     }
     
-    func unstarRepository(owner: String, repo: String) {
+    func unstarRepository(owner: String, repo: String, completion: ((Bool) -> Void)? = nil) {
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
@@ -231,40 +244,102 @@ class AuthManager: ObservableObject {
 
             if let error = error {
                 print("Unstar error:", error)
+                DispatchQueue.main.async {
+                    completion?(false)
+                }
                 return
             }
 
             if let http = response as? HTTPURLResponse {
                 print("Unstar status:", http.statusCode)
+                let isSuccess = (200...299).contains(http.statusCode)
+
+                DispatchQueue.main.async {
+                    completion?(isSuccess)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion?(false)
+                }
             }
 
         }.resume()
     }
     
     func addLocalStar(repo: Repo) {
+        starState.pendingUnstars.removeAll { pendingItem in
+            pendingItem.owner == repo.owner && pendingItem.repo == repo.name
+        }
+
         if !starState.localStarredRepos.contains(where: { $0.owner == repo.owner && $0.name == repo.name }) {
             starState.localStarredRepos.insert(repo, at: 0)
+        }
+
+        if !starState.pendingStars.contains(where: { pendingItem in
+            pendingItem.owner == repo.owner && pendingItem.repo == repo.name
+        }) {
             starState.pendingStars.append((owner: repo.owner, repo: repo.name))
         }
     }
 
     func removeLocalStar(owner: String, repo: String) {
+        starState.pendingStars.removeAll { pendingItem in
+            pendingItem.owner == owner && pendingItem.repo == repo
+        }
+
         if let index = starState.localStarredRepos.firstIndex(where: { $0.owner == owner && $0.name == repo }) {
             starState.localStarredRepos.remove(at: index)
+        }
+
+        if !starState.pendingUnstars.contains(where: { pendingItem in
+            pendingItem.owner == owner && pendingItem.repo == repo
+        }) {
             starState.pendingUnstars.append((owner: owner, repo: repo))
         }
     }
 
     func syncStarChanges() {
-        for item in starState.pendingStars {
-            starRepository(owner: item.owner, repo: item.repo)
+        guard !isSyncingStars else { return }
+
+        let pendingStarsSnapshot = starState.pendingStars
+        let pendingUnstarsSnapshot = starState.pendingUnstars
+        let totalOperations = pendingStarsSnapshot.count + pendingUnstarsSnapshot.count
+
+        guard totalOperations > 0 else { return }
+
+        isSyncingStars = true
+        var completedOperations = 0
+
+        let finishOperation: () -> Void = {
+            completedOperations += 1
+
+            if completedOperations == totalOperations {
+                self.isSyncingStars = false
+            }
         }
 
-        for item in starState.pendingUnstars {
-            unstarRepository(owner: item.owner, repo: item.repo)
+        for item in pendingStarsSnapshot {
+            starRepository(owner: item.owner, repo: item.repo) { success in
+                if success {
+                    self.starState.pendingStars.removeAll { pendingItem in
+                        pendingItem.owner == item.owner && pendingItem.repo == item.repo
+                    }
+                }
+
+                finishOperation()
+            }
         }
 
-        starState.pendingStars.removeAll()
-        starState.pendingUnstars.removeAll()
+        for item in pendingUnstarsSnapshot {
+            unstarRepository(owner: item.owner, repo: item.repo) { success in
+                if success {
+                    self.starState.pendingUnstars.removeAll { pendingItem in
+                        pendingItem.owner == item.owner && pendingItem.repo == item.repo
+                    }
+                }
+
+                finishOperation()
+            }
+        }
     }
 }
