@@ -5,8 +5,10 @@
 //  Created by Osman Kahraman on 2026-02-27.
 //
 
-import SwiftUI
+import Foundation
 
 struct UserPreferences: Codable {
-    var selectedLanguages: [String]
+    var selectedLanguages: [String] = []
+    var starLimit: Int = 100
+    var recentlyUpdatedDays: Int = 0
 }

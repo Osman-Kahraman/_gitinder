@@ -211,14 +211,6 @@ struct HomeView: View {
             // Refetch whenever preferences object changes
             fetchTrendingRepositories()
         }
-        .onReceive(auth.$starLimit) { _ in
-            // Refetch whenever star limit changes
-            fetchTrendingRepositories()
-        }
-        .onReceive(auth.$recentlyUpdatedDays) { _ in
-            // Refetch whenever recently updated day changes
-            fetchTrendingRepositories()
-        }
         .onDisappear {
             auth.syncStarChanges()
         }
@@ -266,7 +258,9 @@ struct HomeView: View {
     }
 
     private func fetchTrendingRepositories() {
-        if auth.starLimit == -1 {
+        let preferences = auth.preferences ?? UserPreferences()
+
+        if preferences.starLimit == -1 {
             GitHubService.fetchUserRepos(username: "Osman-Kahraman") { repos in
                 self.allRepos = repos
                 self.repos = repos
@@ -277,12 +271,12 @@ struct HomeView: View {
         
         guard let prefs = auth.preferences,
               !prefs.selectedLanguages.isEmpty else {
-            var query = "stars:<\(auth.starLimit)"
+            var query = "stars:<\(preferences.starLimit)"
 
-            if auth.recentlyUpdatedDays > 0 {
+            if preferences.recentlyUpdatedDays > 0 {
                 let date = Calendar.current.date(
                     byAdding: .day,
-                    value: -auth.recentlyUpdatedDays,
+                    value: -preferences.recentlyUpdatedDays,
                     to: Date()
                 ) ?? Date()
 
@@ -332,12 +326,12 @@ struct HomeView: View {
 
         DispatchQueue.global().async {
             for (_, language) in languages.enumerated() {
-                var query = "language:\(language) stars:<\(auth.starLimit)"
+                var query = "language:\(language) stars:<\(preferences.starLimit)"
 
-                if auth.recentlyUpdatedDays > 0 {
+                if preferences.recentlyUpdatedDays > 0 {
                     let date = Calendar.current.date(
                         byAdding: .day,
-                        value: -auth.recentlyUpdatedDays,
+                        value: -preferences.recentlyUpdatedDays,
                         to: Date()
                     ) ?? Date()
 

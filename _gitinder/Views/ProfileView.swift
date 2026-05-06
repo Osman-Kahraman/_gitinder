@@ -20,7 +20,7 @@ struct ProfileView: View {
                 // Header Section
                 Section {
                     VStack(spacing: 12) {
-                        if let avatarURL = auth.avatarURL,
+                        if let avatarURL = auth.profile.avatarURL,
                            let url = URL(string: avatarURL) {
                             AsyncImage(url: url) { image in
                                 image
@@ -44,10 +44,10 @@ struct ProfileView: View {
                                 )
                         }
 
-                        Text(auth.username.isEmpty ? "GitHub User" : auth.username)
+                        Text(auth.profile.username.isEmpty ? "GitHub User" : auth.profile.username)
                             .font(.custom("Doto-Black_ExtraBold", size: 24))
 
-                        Text(auth.username.isEmpty ? "@username" : "@\(auth.username.lowercased())")
+                        Text(auth.profile.username.isEmpty ? "@username" : "@\(auth.profile.username.lowercased())")
                             .foregroundColor(.gray)
                             .font(.custom("Doto-Black_Bold", size: 14))
                     }
@@ -59,9 +59,9 @@ struct ProfileView: View {
                 // Stats Section
                 Section {
                     HStack(spacing: 40) {
-                        profileStat(title: "Repos", value: "\(auth.publicRepos)")
-                        profileStat(title: "Followers", value: "\(auth.followers)")
-                        profileStat(title: "Following", value: "\(auth.following)")
+                        profileStat(title: "Repos", value: "\(auth.profile.publicRepos)")
+                        profileStat(title: "Followers", value: "\(auth.profile.followers)")
+                        profileStat(title: "Following", value: "\(auth.profile.following)")
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
@@ -170,6 +170,13 @@ private struct PreviewWrapper: View {
         ProfileView()
             .environmentObject(auth)
             .onAppear {
+                auth.profile = UserProfile(
+                    username: "apple",
+                    avatarURL: nil,
+                    publicRepos: 12,
+                    followers: 2300,
+                    following: 14
+                )
                 auth.localStarredRepos = [
                     Repo(name: "swift", description: "The Swift Programming Language", star: 65000, fork: 10000, issues: 5000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "apple"),
                     Repo(name: "tensorflow", description: "An end-to-end open source machine learning platform", star: 180000, fork: 88000, issues: 9000, lastUpdate: "2026-01-01", languagesURL: "", languages: [], owner: "tensorflow"),

@@ -9,11 +9,7 @@ import SwiftUI
 
 class AuthManager: ObservableObject {
     @Published var isLoggedIn: Bool = false
-    @Published var username: String = ""
-    @Published var avatarURL: String?
-    @Published var publicRepos: Int = 0
-    @Published var followers: Int = 0
-    @Published var following: Int = 0
+    @Published var profile = UserProfile()
     @Published var accessToken: String?
     @Published var starredRepos: [Repo] = []
     @Published var localStarredRepos: [Repo] = []
@@ -21,18 +17,13 @@ class AuthManager: ObservableObject {
     @Published var pendingUnstars: [(owner: String, repo: String)] = []
     @Published var preferences: UserPreferences?
     @Published var needsOnboarding: Bool = false
-    @Published var starLimit: Int = 100
-    @Published var recentlyUpdatedDays: Int = 0
     @Published var blacklistedRepos: Set<String> = []
-    @Published var isDemoMode: Bool = false
     private let blacklistKey = "repo_blacklist"
 
     private let tokenKey = "github_access_token"
 
     init() {
         loadPreferences()
-        loadStarLimit()
-        loadRecentlyUpdatedDays()
         loadBlacklist()
 
         if let savedToken = KeychainManager.shared.read(key: tokenKey) {
@@ -51,11 +42,7 @@ class AuthManager: ObservableObject {
     func logout() {
         KeychainManager.shared.delete(key: tokenKey)
 
-        self.username = ""
-        self.avatarURL = nil
-        self.publicRepos = 0
-        self.followers = 0
-        self.following = 0
+        profile = UserProfile()
         self.accessToken = nil
         self.preferences = nil
         self.isLoggedIn = false
@@ -78,25 +65,15 @@ class AuthManager: ObservableObject {
     }
 
     func saveStarLimit(_ limit: Int) {
-        self.starLimit = limit
-        UserDefaults.standard.set(limit, forKey: "user_star_limit")
-    }
-
-    func loadStarLimit() {
-        if let saved = UserDefaults.standard.value(forKey: "user_star_limit") as? Int {
-            self.starLimit = saved
-        }
+        var updatedPreferences = preferences ?? UserPreferences()
+        updatedPreferences.starLimit = limit
+        savePreferences(updatedPreferences)
     }
 
     func saveRecentlyUpdatedDays(_ days: Int) {
-        self.recentlyUpdatedDays = days
-        UserDefaults.standard.set(days, forKey: "user_recently_updated_days")
-    }
-
-    func loadRecentlyUpdatedDays() {
-        if let saved = UserDefaults.standard.value(forKey: "user_recently_updated_days") as? Int {
-            self.recentlyUpdatedDays = saved
-        }
+        var updatedPreferences = preferences ?? UserPreferences()
+        updatedPreferences.recentlyUpdatedDays = days
+        savePreferences(updatedPreferences)
     }
 
     func addRepoToBlacklist(owner: String, repo: String) {
@@ -135,8 +112,6 @@ class AuthManager: ObservableObject {
     }
 
     func fetchGitHubUser() {
-        if isDemoMode { return }
-        
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user") else { return }
 
@@ -149,11 +124,11 @@ class AuthManager: ObservableObject {
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
             DispatchQueue.main.async {
-                self.username = json["login"] as? String ?? ""
-                self.avatarURL = json["avatar_url"] as? String
-                self.publicRepos = json["public_repos"] as? Int ?? 0
-                self.followers = json["followers"] as? Int ?? 0
-                self.following = json["following"] as? Int ?? 0
+                self.profile.username = json["login"] as? String ?? ""
+                self.profile.avatarURL = json["avatar_url"] as? String
+                self.profile.publicRepos = json["public_repos"] as? Int ?? 0
+                self.profile.followers = json["followers"] as? Int ?? 0
+                self.profile.following = json["following"] as? Int ?? 0
                 self.isLoggedIn = true
 
                 if self.preferences == nil {
@@ -166,8 +141,6 @@ class AuthManager: ObservableObject {
     }
     
     func fetchStarredRepositories() {
-        if isDemoMode { return }
-        
         guard let token = accessToken,
               let url = URL(string: "https://api.github.com/user/starred?per_page=25") else { return }
 
@@ -211,8 +184,6 @@ class AuthManager: ObservableObject {
     }
     
     func starRepository(owner: String, repo: String) {
-        if isDemoMode { return }
-        
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
@@ -250,8 +221,6 @@ class AuthManager: ObservableObject {
     }
     
     func unstarRepository(owner: String, repo: String) {
-        if isDemoMode { return }
-        
         guard let token = accessToken else { return }
 
         let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"

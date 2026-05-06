@@ -67,7 +67,7 @@ struct RecentlyUpdatedView: View {
         .padding()
         .background(Color.black.ignoresSafeArea())
         .onAppear {
-            selection = auth.recentlyUpdatedDays
+            selection = auth.preferences?.recentlyUpdatedDays ?? UserPreferences().recentlyUpdatedDays
         }
     }
 }

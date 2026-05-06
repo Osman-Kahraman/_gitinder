@@ -43,7 +43,8 @@ struct LanguagesView: View {
             }
 
             Button(action: {
-                let prefs = UserPreferences(selectedLanguages: Array(selected))
+                var prefs = auth.preferences ?? UserPreferences()
+                prefs.selectedLanguages = Array(selected)
                 auth.savePreferences(prefs)
                 
                 if isOnboarding {
