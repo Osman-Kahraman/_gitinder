@@ -268,7 +268,7 @@ class AuthManager: ObservableObject {
     
     func addLocalStar(repo: Repo) {
         starState.pendingUnstars.removeAll { pendingItem in
-            pendingItem.owner == repo.owner && pendingItem.repo == repo.name
+            pendingItem.owner == repo.owner && pendingItem.name == repo.name
         }
 
         if !starState.localStarredRepos.contains(where: { $0.owner == repo.owner && $0.name == repo.name }) {
@@ -276,15 +276,15 @@ class AuthManager: ObservableObject {
         }
 
         if !starState.pendingStars.contains(where: { pendingItem in
-            pendingItem.owner == repo.owner && pendingItem.repo == repo.name
+            pendingItem.owner == repo.owner && pendingItem.name == repo.name
         }) {
-            starState.pendingStars.append((owner: repo.owner, repo: repo.name))
+            starState.pendingStars.append(RepoReference(owner: repo.owner, name: repo.name))
         }
     }
 
     func removeLocalStar(owner: String, repo: String) {
         starState.pendingStars.removeAll { pendingItem in
-            pendingItem.owner == owner && pendingItem.repo == repo
+            pendingItem.owner == owner && pendingItem.name == repo
         }
 
         if let index = starState.localStarredRepos.firstIndex(where: { $0.owner == owner && $0.name == repo }) {
@@ -292,9 +292,9 @@ class AuthManager: ObservableObject {
         }
 
         if !starState.pendingUnstars.contains(where: { pendingItem in
-            pendingItem.owner == owner && pendingItem.repo == repo
+            pendingItem.owner == owner && pendingItem.name == repo
         }) {
-            starState.pendingUnstars.append((owner: owner, repo: repo))
+            starState.pendingUnstars.append(RepoReference(owner: owner, name: repo))
         }
     }
 
@@ -319,10 +319,10 @@ class AuthManager: ObservableObject {
         }
 
         for item in pendingStarsSnapshot {
-            starRepository(owner: item.owner, repo: item.repo) { success in
+            starRepository(owner: item.owner, repo: item.name) { success in
                 if success {
                     self.starState.pendingStars.removeAll { pendingItem in
-                        pendingItem.owner == item.owner && pendingItem.repo == item.repo
+                        pendingItem == item
                     }
                 }
 
@@ -331,10 +331,10 @@ class AuthManager: ObservableObject {
         }
 
         for item in pendingUnstarsSnapshot {
-            unstarRepository(owner: item.owner, repo: item.repo) { success in
+            unstarRepository(owner: item.owner, repo: item.name) { success in
                 if success {
                     self.starState.pendingUnstars.removeAll { pendingItem in
-                        pendingItem.owner == item.owner && pendingItem.repo == item.repo
+                        pendingItem == item
                     }
                 }
 

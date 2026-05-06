@@ -7,9 +7,14 @@
 
 import Foundation
 
+struct RepoReference: Hashable, Codable {
+    let owner: String
+    let name: String
+}
+
 struct StarState {
     var starredRepos: [Repo] = []
     var localStarredRepos: [Repo] = []
-    var pendingStars: [(owner: String, repo: String)] = []
-    var pendingUnstars: [(owner: String, repo: String)] = []
+    var pendingStars: [RepoReference] = []
+    var pendingUnstars: [RepoReference] = []
 }
