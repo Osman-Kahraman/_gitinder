@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct SwipeCard: View {
-    
     let repo: Repo
     var onSwipeLeft: () -> Void
     var onSwipeRight: () -> Void
