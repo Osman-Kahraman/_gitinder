@@ -11,6 +11,8 @@ import SwiftUI
 struct GitSwipeApp: App {
 
     @StateObject private var auth = AuthManager()
+    private let credentialsStore = CredentialsStore()
+    private let gitHubAuthClient = GitHubAuthClient()
 
     var body: some Scene {
         WindowGroup {
@@ -37,30 +39,15 @@ struct GitSwipeApp: App {
     }
 
     private func exchangeCodeForToken(code: String) async {
-        guard let url = URL(string: "https://gitinder-auth.onrender.com/oauth/exchange") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body = ["code": code]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let accessToken = json["access_token"] as? String else {
-                print("Token exchange failed")
-                return
-            }
-
-            KeychainManager.shared.save(key: "github_access_token", value: accessToken)
+            let accessToken = try await gitHubAuthClient.exchangeCodeForToken(code)
+            credentialsStore.saveAccessToken(accessToken)
             await MainActor.run {
                 auth.accessToken = accessToken
             }
             await auth.fetchGitHubUser()
         } catch {
-            print("Token exchange error:", error)
+            print("Token exchange failed:", error)
         }
     }
 }

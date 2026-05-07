@@ -15,10 +15,10 @@ class AuthManager: ObservableObject {
     @Published var preferences = UserPreferences()
     @Published var blacklistedRepos: Set<String> = []
     @Published private(set) var isSyncingStars = false
-    private let blacklistKey = "repo_blacklist"
 
-    private let tokenKey = "github_access_token"
-    private let preferencesKey = "user_preferences"
+    private let credentialsStore = CredentialsStore()
+    private let gitHubClient = GitHubClient()
+    private let preferencesStore = PreferencesStore()
 
     var isLoggedIn: Bool {
         accessToken != nil
@@ -29,10 +29,10 @@ class AuthManager: ObservableObject {
     }
 
     init() {
-        loadPreferences()
-        loadBlacklist()
+        preferences = preferencesStore.loadPreferences()
+        blacklistedRepos = preferencesStore.loadBlacklist()
 
-        if let savedToken = KeychainManager.shared.read(key: tokenKey) {
+        if let savedToken = credentialsStore.loadAccessToken() {
             self.accessToken = savedToken
             Task {
                 await fetchGitHubUser()
@@ -41,7 +41,7 @@ class AuthManager: ObservableObject {
     }
     
     func logout() {
-        KeychainManager.shared.delete(key: tokenKey)
+        credentialsStore.clearAccessToken()
         clearPreferences()
 
         profile = UserProfile()
@@ -51,16 +51,7 @@ class AuthManager: ObservableObject {
     
     func savePreferences(_ preferences: UserPreferences) {
         self.preferences = preferences
-        if let data = try? JSONEncoder().encode(preferences) {
-            UserDefaults.standard.set(data, forKey: preferencesKey)
-        }
-    }
-
-    func loadPreferences() {
-        if let data = UserDefaults.standard.data(forKey: preferencesKey),
-           let prefs = try? JSONDecoder().decode(UserPreferences.self, from: data) {
-            self.preferences = prefs
-        }
+        preferencesStore.savePreferences(preferences)
     }
 
     func saveStarLimit(_ limit: Int) {
@@ -78,7 +69,7 @@ class AuthManager: ObservableObject {
     func addRepoToBlacklist(owner: String, repo: String) {
         let key = "\(owner)/\(repo)"
         blacklistedRepos.insert(key)
-        saveBlacklist()
+        preferencesStore.saveBlacklist(blacklistedRepos)
     }
 
     func isRepoBlacklisted(owner: String, repo: String) -> Bool {
@@ -86,20 +77,9 @@ class AuthManager: ObservableObject {
         return blacklistedRepos.contains(key)
     }
 
-    private func saveBlacklist() {
-        let array = Array(blacklistedRepos)
-        UserDefaults.standard.set(array, forKey: blacklistKey)
-    }
-
-    private func loadBlacklist() {
-        if let saved = UserDefaults.standard.array(forKey: blacklistKey) as? [String] {
-            blacklistedRepos = Set(saved)
-        }
-    }
-
     private func clearPreferences() {
         preferences = UserPreferences()
-        UserDefaults.standard.removeObject(forKey: preferencesKey)
+        preferencesStore.clearPreferences()
     }
 
     func getOAuthURL() -> URL? {
@@ -116,23 +96,10 @@ class AuthManager: ObservableObject {
     }
 
     func fetchGitHubUser() async {
-        guard let token = accessToken,
-              let url = URL(string: "https://api.github.com/user") else { return }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        guard let token = accessToken else { return }
 
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-
-            self.profile.username = json["login"] as? String ?? ""
-            self.profile.avatarURL = json["avatar_url"] as? String
-            self.profile.publicRepos = json["public_repos"] as? Int ?? 0
-            self.profile.followers = json["followers"] as? Int ?? 0
-            self.profile.following = json["following"] as? Int ?? 0
-
+            self.profile = try await gitHubClient.fetchCurrentUser(token: token)
             await fetchStarredRepositories()
         } catch {
             print("Fetch user error:", error)
@@ -140,39 +107,10 @@ class AuthManager: ObservableObject {
     }
     
     func fetchStarredRepositories() async {
-        guard let token = accessToken,
-              let url = URL(string: "https://api.github.com/user/starred?per_page=25") else { return }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        guard let token = accessToken else { return }
 
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                print("Failed to parse starred repos")
-                return
-            }
-
-            let repos: [Repo] = jsonArray.compactMap { item -> Repo? in
-                guard let name = item["name"] as? String,
-                      let description = item["description"] as? String else {
-                    return nil
-                }
-
-                return Repo(
-                    name: name,
-                    description: description,
-                    star: item["stargazers_count"] as? Int ?? 0,
-                    fork: item["forks_count"] as? Int ?? 0,
-                    issues: item["open_issues_count"] as? Int ?? 0,
-                    lastUpdate: "",
-                    languagesURL: "",
-                    languages: [],
-                    owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
-                )
-            }
-
+            let repos = try await gitHubClient.fetchStarredRepositories(token: token)
             self.starState.starredRepos = repos
             if self.starState.localStarredRepos.isEmpty {
                 self.starState.localStarredRepos = self.starState.starredRepos
@@ -185,35 +123,8 @@ class AuthManager: ObservableObject {
     func starRepository(owner: String, repo: String) async -> Bool {
         guard let token = accessToken else { return false }
 
-        let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
-        
-        guard let url = URL(string: urlString) else { return false }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("0", forHTTPHeaderField: "Content-Length")
-
-        // GitHub expects an empty body for PUT star requests
-        request.httpBody = Data()
-
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            if let http = response as? HTTPURLResponse {
-                print("Star status:", http.statusCode)
-                let isSuccess = (200...299).contains(http.statusCode)
-
-                if let body = String(data: data, encoding: .utf8), !body.isEmpty {
-                    print("GitHub response:", body)
-                }
-
-                return isSuccess
-            }
-
-            return false
+            return try await gitHubClient.starRepository(owner: owner, repo: repo, token: token)
         } catch {
             print("Star error:", error)
             return false
@@ -223,24 +134,8 @@ class AuthManager: ObservableObject {
     func unstarRepository(owner: String, repo: String) async -> Bool {
         guard let token = accessToken else { return false }
 
-        let urlString = "https://api.github.com/user/starred/\(owner)/\(repo)"
-        guard let url = URL(string: urlString) else { return false }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-
-            if let http = response as? HTTPURLResponse {
-                print("Unstar status:", http.statusCode)
-                return (200...299).contains(http.statusCode)
-            }
-
-            return false
+            return try await gitHubClient.unstarRepository(owner: owner, repo: repo, token: token)
         } catch {
             print("Unstar error:", error)
             return false
