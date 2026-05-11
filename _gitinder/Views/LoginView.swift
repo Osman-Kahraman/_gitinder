@@ -18,57 +18,54 @@ struct LoginView: View {
     @State private var authURL: URL?
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
+        VStack(spacing: 28) {
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 160, height: 160)
+            
+            Text(animatedText)
+                .font(.custom("Doto-Black_ExtraBold", size: 32))
+                .foregroundColor(.white)
 
-            VStack(spacing: 28) {
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 160, height: 160)
-                
-                Text(animatedText)
-                    .font(.custom("Doto-Black_ExtraBold", size: 32))
-                    .foregroundColor(.white)
+            Text("Sign in to continue")
+                .font(.custom("Doto-Black_Bold", size: 14))
+                .foregroundColor(.gray)
 
-                Text("Sign in to continue")
-                    .font(.custom("Doto-Black_Bold", size: 14))
+            VStack(spacing: 16) {
+                Button(action: {
+                    if let url = auth.getOAuthURL() {
+                        authURL = url
+                        showSafari = true
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "globe")
+                        Text("Continue with GitHub")
+                            .font(.custom("Doto-Black_Bold", size: 16))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .foregroundColor(.black)
+                    .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal, 32)
+
+            HStack(spacing: 4) {
+                Text("built by")
+                    .font(.custom("Doto-Black_Bold", size: 10))
                     .foregroundColor(.gray)
 
-                VStack(spacing: 16) {
-                    Button(action: {
-                        if let url = auth.getOAuthURL() {
-                            authURL = url
-                            showSafari = true
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "globe")
-                            Text("Continue with GitHub")
-                                .font(.custom("Doto-Black_Bold", size: 16))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .foregroundColor(.black)
-                        .cornerRadius(12)
-                    }
-                }
-                .padding(.horizontal, 32)
-
-                HStack(spacing: 4) {
-                    Text("built by")
-                        .font(.custom("Doto-Black_Bold", size: 10))
-                        .foregroundColor(.gray)
-
-                    Link("@Osman-Kahraman", destination: URL(string: "https://github.com/Osman-Kahraman")!)
-                        .font(.custom("Doto-Black_Bold", size: 10))
-                        .foregroundColor(.white)
-                }
-                .padding(.top, 16)
+                Link("@Osman-Kahraman", destination: URL(string: "https://github.com/Osman-Kahraman")!)
+                    .font(.custom("Doto-Black_Bold", size: 10))
+                    .foregroundColor(.white)
             }
+            .padding(.top, 16)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
         .sheet(isPresented: $showSafari) {
             if let url = authURL {
                 SafariView(url: url)
