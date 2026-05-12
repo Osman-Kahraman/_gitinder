@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+enum AuthPhase: Equatable {
+    case unauthenticated
+    case loading
+    case ready
+    case error(String)
+}
+
 @MainActor
 class AuthManager: ObservableObject {
     @Published var profile = UserProfile()
@@ -15,13 +22,16 @@ class AuthManager: ObservableObject {
     @Published var preferences = UserPreferences()
     @Published var blacklistedRepos: Set<String> = []
     @Published private(set) var isSyncingStars = false
+    @Published var phase: AuthPhase = .unauthenticated
 
     private let credentialsStore = CredentialsStore()
     private let gitHubClient = GitHubClient()
     private let preferencesStore = PreferencesStore()
 
     var isLoggedIn: Bool {
-        accessToken != nil
+        if case .ready = phase { return true }
+        
+        return false
     }
 
     var needsOnboarding: Bool {
@@ -34,9 +44,12 @@ class AuthManager: ObservableObject {
 
         if let savedToken = credentialsStore.loadAccessToken() {
             self.accessToken = savedToken
+            self.phase = .loading
             Task {
                 await fetchGitHubUser()
             }
+        } else {
+            self.phase = .unauthenticated
         }
     }
     
@@ -47,6 +60,7 @@ class AuthManager: ObservableObject {
         profile = UserProfile()
         self.accessToken = nil
         self.starState = StarState()
+        self.phase = .unauthenticated
     }
     
     func savePreferences(_ preferences: UserPreferences) {
@@ -94,16 +108,26 @@ class AuthManager: ObservableObject {
 
         return URL(string: authURLString)
     }
-
+    
     func fetchGitHubUser() async {
         guard let token = accessToken else { return }
 
         do {
             self.profile = try await gitHubClient.fetchCurrentUser(token: token)
             await fetchStarredRepositories()
+            self.phase = .ready
         } catch {
-            print("Fetch user error:", error)
+            if isUnauthorized(error) {
+                logout()
+                self.phase = .unauthenticated
+            } else {
+                self.phase = .error("Couldn't get user infos, please try again")
+            }
         }
+    }
+    
+    private func isUnauthorized(_ error: Error) -> Bool {
+        return false
     }
     
     func fetchStarredRepositories() async {
