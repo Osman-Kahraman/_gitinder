@@ -10,7 +10,6 @@ import Foundation
 import Security
 
 class KeychainManager {
-
     static let shared = KeychainManager()
 
     func save(key: String, value: String) {
