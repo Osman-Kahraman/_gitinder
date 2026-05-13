@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct LoadingView: View {
+    var message: String? = nil
+
     @State private var tipIndex = 0
     private let tips = [
         "Tip: Swipe right to star repositories instantly.",
@@ -27,9 +29,11 @@ struct LoadingView: View {
                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 .scaleEffect(1.4)
 
-            Text("Finding great repositories for you...")
+            Text(message ?? "Finding great repositories for you...")
                 .foregroundColor(.white)
                 .font(.custom("Doto-Black_Bold", size: 16))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
 
             Text(loadingTip)
                 .foregroundColor(.gray)

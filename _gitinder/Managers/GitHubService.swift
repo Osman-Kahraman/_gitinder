@@ -8,107 +8,104 @@
 import Foundation
 import SwiftUI
 
-class GitHubService {
+final class GitHubService {
     static func fetchRepos(
         query: String,
         token: String?,
         existing: [Repo],
-        blacklistCheck: @escaping (Repo) -> Bool,
-        completion: @escaping ([Repo]) -> Void
-    ) {
-
+        blacklistCheck: (Repo) -> Bool,
+        onRateLimited: (() async -> Void)? = nil,
+        retryCount: Int = 1
+    ) async throws -> [Repo] {
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let randomPage = Int.random(in: 1...5)
 
-        var allFetched: [Repo] = []
-        let group = DispatchGroup()
-
-        for page in 1...3 {
-            guard let url = URL(string:
-                "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=100&page=\(page)"
-            ) else { continue }
-
-            group.enter()
-
-            var request = URLRequest(url: url)
-            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-
-            if let token = token {
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
-
-            URLSession.shared.dataTask(with: request) { data, response, _ in
-                defer { group.leave() }
-
-                guard let data = data else { return }
-
-                if let response = response as? HTTPURLResponse, response.statusCode == 403 {
-                    print("⚠️ Rate limit hit")
-                    return
-                }
-
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let items = json["items"] as? [[String: Any]] else { return }
-
-                let repos = items.compactMap { item -> Repo? in
-                    guard let name = item["name"] as? String else { return nil }
-
-                    return Repo(
-                        name: name,
-                        description: item["description"] as? String ?? "",
-                        star: item["stargazers_count"] as? Int ?? 0,
-                        fork: item["forks_count"] as? Int ?? 0,
-                        issues: item["open_issues_count"] as? Int ?? 0,
-                        lastUpdate: item["updated_at"] as? String ?? "",
-                        languagesURL: item["languages_url"] as? String ?? "",
-                        languages: [],
-                        owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
-                    )
-                }
-
-                allFetched.append(contentsOf: repos)
-
-            }.resume()
+        guard let url = URL(string:
+            "https://api.github.com/search/repositories?q=\(encodedQuery)&sort=stars&order=desc&per_page=30&page=\(randomPage)"
+        ) else {
+            throw GitHubClientError.invalidURL
         }
-
-        group.notify(queue: .main) {
-
-            let existingIDs = Set(existing.map { "\($0.owner)/\($0.name)" })
-
-            let unique = allFetched.filter {
-                !existingIDs.contains("\($0.owner)/\($0.name)")
-            }
-
-            let filtered = unique.filter { repo in
-                !blacklistCheck(repo)
-            }
-
-            completion(filtered)
-        }
-    }
-    
-    static func fetchLanguages(
-        urlString: String,
-        token: String?,
-        completion: @escaping ([Language]) -> Void
-    ) {
-        guard let url = URL(string: urlString) else { return }
 
         var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
         if let token = token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data,
-                  let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Int] else {
-                completion([])
-                return
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            if isRateLimited(response), retryCount > 0 {
+                await onRateLimited?()
+                try await Task.sleep(nanoseconds: 30_000_000_000)
+
+                return try await fetchRepos(
+                    query: query,
+                    token: token,
+                    existing: existing,
+                    blacklistCheck: blacklistCheck,
+                    onRateLimited: onRateLimited,
+                    retryCount: retryCount - 1
+                )
+            }
+
+            try validate(response)
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]] else {
+                throw GitHubClientError.invalidResponse
+            }
+
+            let repos = items.compactMap { item -> Repo? in
+                guard let name = item["name"] as? String else { return nil }
+
+                return Repo(
+                    name: name,
+                    description: item["description"] as? String ?? "",
+                    star: item["stargazers_count"] as? Int ?? 0,
+                    fork: item["forks_count"] as? Int ?? 0,
+                    issues: item["open_issues_count"] as? Int ?? 0,
+                    lastUpdate: item["updated_at"] as? String ?? "",
+                    languagesURL: item["languages_url"] as? String ?? "",
+                    languages: [],
+                    owner: (item["owner"] as? [String: Any])?["login"] as? String ?? ""
+                )
+            }
+
+            let existingIDs = Set(existing.map { "\($0.owner)/\($0.name)" })
+            return repos.filter { repo in
+                !existingIDs.contains("\(repo.owner)/\(repo.name)") && !blacklistCheck(repo)
+            }
+        } catch let error as GitHubClientError {
+            throw error
+        } catch {
+            throw GitHubClientError.network(error)
+        }
+    }
+
+    static func fetchLanguages(urlString: String, token: String?) async throws -> [Language] {
+        guard let url = URL(string: urlString) else {
+            throw GitHubClientError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        if let token = token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            try validate(response)
+
+            guard let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Int] else {
+                throw GitHubClientError.invalidResponse
             }
 
             let total = dict.values.reduce(0, +)
-
-            let mapped = dict.map { key, value in
+            return dict.map { key, value in
                 Language(
                     name: key,
                     percentage: total > 0 ? (Double(value) / Double(total)) * 100 : 0,
@@ -119,28 +116,29 @@ class GitHubService {
                     )
                 )
             }
-
-            DispatchQueue.main.async {
-                completion(mapped)
-            }
-        }.resume()
+        } catch let error as GitHubClientError {
+            throw error
+        } catch {
+            throw GitHubClientError.network(error)
+        }
     }
-    
-    static func fetchUserRepos(
-        username: String,
-        completion: @escaping ([Repo]) -> Void
-    ) {
+
+    static func fetchUserRepos(username: String) async throws -> [Repo] {
         guard let url = URL(string:
             "https://api.github.com/users/\(username)/repos?per_page=100&sort=updated"
-        ) else { return }
+        ) else {
+            throw GitHubClientError.invalidURL
+        }
 
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                return
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            try validate(response)
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                throw GitHubClientError.invalidResponse
             }
 
-            let repos = json.compactMap { item -> Repo? in
+            return json.compactMap { item -> Repo? in
                 guard let name = item["name"] as? String else { return nil }
 
                 return Repo(
@@ -155,10 +153,34 @@ class GitHubService {
                     owner: username
                 )
             }
+        } catch let error as GitHubClientError {
+            throw error
+        } catch {
+            throw GitHubClientError.network(error)
+        }
+    }
 
-            DispatchQueue.main.async {
-                completion(repos)
-            }
-        }.resume()
+    private static func validate(_ response: URLResponse) throws {
+        guard let http = response as? HTTPURLResponse else {
+            throw GitHubClientError.invalidResponse
+        }
+
+        switch http.statusCode {
+        case 200...299:
+            return
+        case 401:
+            throw GitHubClientError.unauthorized
+        case 403:
+            throw GitHubClientError.rateLimited
+        case 500...599:
+            throw GitHubClientError.serverError(http.statusCode)
+        default:
+            throw GitHubClientError.invalidResponse
+        }
+    }
+
+    private static func isRateLimited(_ response: URLResponse) -> Bool {
+        guard let http = response as? HTTPURLResponse else { return false }
+        return http.statusCode == 403
     }
 }

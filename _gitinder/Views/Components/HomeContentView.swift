@@ -11,7 +11,9 @@ struct HomeContentView: View {
     @EnvironmentObject var auth: AuthManager
     @Binding var repos: [Repo]
     @Binding var currentIndex: Int
-    let fetchTrendingRepositories: () -> Void
+    @Binding var isLoadingFeed: Bool
+    @Binding var feedStatusMessage: String?
+    let fetchTrendingRepositories: (_ resetDeck: Bool) -> Void
 
     @State private var dragOffset: CGFloat = 0
     @State private var lastSwipeDirection: CGFloat = 0
@@ -155,8 +157,10 @@ struct HomeContentView: View {
                             .combined(with: .opacity)
                     ))
                 }
+            } else if isLoadingFeed {
+                LoadingView(message: feedStatusMessage)
             } else {
-                LoadingView()
+                emptyFeedView
             }
             
             Spacer()
@@ -189,13 +193,13 @@ struct HomeContentView: View {
         }
         .onAppear {
             if !hasLoaded {
-                fetchTrendingRepositories()
+                fetchTrendingRepositories(true)
                 hasLoaded = true
             }
         }
         .onReceive(auth.$preferences) { _ in
             // Refetch whenever preferences object changes
-            fetchTrendingRepositories()
+            fetchTrendingRepositories(true)
         }
         .onDisappear {
             auth.syncStarChanges()
@@ -221,13 +225,33 @@ struct HomeContentView: View {
                 // Prefetch when approaching end (last 5 cards)
                 if currentIndex >= repos.count - 5 {
                     print("Prefetch triggered...")
-                    fetchTrendingRepositories()
+                    fetchTrendingRepositories(false)
                 }
             } else {
                 // Fallback if somehow reached absolute end
                 print("Reached end of cards, fetching more...")
-                fetchTrendingRepositories()
+                fetchTrendingRepositories(false)
             }
+        }
+    }
+
+    private var emptyFeedView: some View {
+        VStack(spacing: 16) {
+            Text(feedStatusMessage ?? "No repositories found.")
+                .foregroundColor(.white)
+                .font(.custom("Doto-Black_Bold", size: 16))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button("Try Again") {
+                fetchTrendingRepositories(true)
+            }
+            .foregroundColor(.white)
+            .font(.custom("Doto-Black_ExtraBold", size: 14))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.14))
+            .clipShape(Capsule())
         }
     }
 }

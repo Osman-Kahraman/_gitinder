@@ -13,94 +13,71 @@ struct HomeView: View {
     @State private var allRepos: [Repo] = []
 
     @State private var currentIndex = 0
+    @State private var isFetchingRepos = false
+    @State private var fetchTask: Task<Void, Never>?
+    @State private var feedStatusMessage: String?
     
 
     var body: some View {
-        switch auth.phase {
-            case .unauthenticated:
-                LoginView()
-                    .environmentObject(auth)
+        HomeContentView(
+            repos: $repos,
+            currentIndex: $currentIndex,
+            isLoadingFeed: $isFetchingRepos,
+            feedStatusMessage: $feedStatusMessage,
+            fetchTrendingRepositories: fetchTrendingRepositories
+        )
+        .environmentObject(auth)
+    }
 
-            case .loading:
-                LoadingView()
-                    .onAppear {}
-
-            case .error(let message):
-                VStack(spacing: 16) {
-                    Text(message)
-                        .foregroundColor(.white)
-                    Button("Try Again") {
-                        Task { await auth.fetchGitHubUser() }
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.ignoresSafeArea())
-
-            case .ready:
-                HomeContentView(
-                    repos: $repos,
-                    currentIndex: $currentIndex,
-                    fetchTrendingRepositories: fetchTrendingRepositories
-                )
-                .environmentObject(auth)
+    private func fetchTrendingRepositories(resetDeck: Bool) {
+        fetchTask?.cancel()
+        fetchTask = Task {
+            await loadTrendingRepositories(resetDeck: resetDeck)
         }
     }
 
-    private func fetchTrendingRepositories() {
+    @MainActor
+    private func loadTrendingRepositories(resetDeck: Bool) async {
+        isFetchingRepos = true
+        defer {
+            if !Task.isCancelled {
+                isFetchingRepos = false
+            }
+        }
+
         let preferences = auth.preferences
 
+        if resetDeck {
+            allRepos = []
+            repos = []
+            currentIndex = 0
+        }
+
+        feedStatusMessage = "Finding great repositories for you..."
+
         if preferences.starLimit == -1 {
-            GitHubService.fetchUserRepos(username: "Osman-Kahraman") { repos in
-                self.allRepos = repos
-                self.repos = repos
+            do {
+                let fetchedRepos = try await GitHubService.fetchUserRepos(username: "Osman-Kahraman")
+                self.allRepos = fetchedRepos
+                self.repos = fetchedRepos
                 self.currentIndex = 0
+                self.feedStatusMessage = nil
+                auth.errorMessage = nil
+            } catch {
+                if Task.isCancelled { return }
+                showFeedError(error)
             }
             return
         }
         
         guard !preferences.selectedLanguages.isEmpty else {
-            var query = "stars:<\(preferences.starLimit)"
-
-            if preferences.recentlyUpdatedDays > 0 {
-                let date = Calendar.current.date(
-                    byAdding: .day,
-                    value: -preferences.recentlyUpdatedDays,
-                    to: Date()
-                ) ?? Date()
-
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
-
-                let dateString = formatter.string(from: date)
-
-                query += " pushed:>\(dateString)"
-            }
-
-            GitHubService.fetchRepos(
-                query: query,
-                token: auth.accessToken,
-                existing: self.allRepos,
-                blacklistCheck: { repo in
-                    auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name)
-                }
-            ) { newRepos in
-                self.allRepos.append(contentsOf: newRepos)
-                self.repos = self.allRepos.shuffled()
-
-                if self.currentIndex >= self.repos.count {
-                    self.currentIndex = 0
-                }
-
-                for repo in newRepos.prefix(5) {
-                    GitHubService.fetchLanguages(
-                        urlString: repo.languagesURL,
-                        token: auth.accessToken
-                    ) { languages in
-                        if let index = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
-                            self.allRepos[index].languages = languages
-                        }
-                    }
-                }
+            do {
+                let query = buildRepoQuery(language: nil, preferences: preferences)
+                let newRepos = try await fetchAndAppendRepos(query: query)
+                await fetchLanguages(for: Array(newRepos.prefix(5)))
+            } catch {
+                if Task.isCancelled { return }
+                showFeedError(error)
             }
             return
         }
@@ -108,61 +85,123 @@ struct HomeView: View {
         // Limit to first 5 languages to avoid GitHub boolean operator limit
         let languages = Array(preferences.selectedLanguages.prefix(5))
 
-        self.allRepos = []
-        self.repos = []
-        self.currentIndex = 0
+        do {
+            for language in languages {
+                if Task.isCancelled { return }
 
-        DispatchQueue.global().async {
-            for (_, language) in languages.enumerated() {
-                var query = "language:\(language) stars:<\(preferences.starLimit)"
+                let query = buildRepoQuery(language: language, preferences: preferences)
+                let newRepos = try await fetchAndAppendRepos(query: query)
+                await fetchLanguages(for: Array(newRepos.prefix(5)))
+                try await Task.sleep(nanoseconds: 500_000_000)
+            }
+        } catch {
+            if Task.isCancelled { return }
+            showFeedError(error)
+        }
+    }
 
-                if preferences.recentlyUpdatedDays > 0 {
-                    let date = Calendar.current.date(
-                        byAdding: .day,
-                        value: -preferences.recentlyUpdatedDays,
-                        to: Date()
-                    ) ?? Date()
+    @MainActor
+    private func fetchAndAppendRepos(query: String) async throws -> [Repo] {
+        let newRepos = try await GitHubService.fetchRepos(
+            query: query,
+            token: auth.accessToken,
+            existing: self.allRepos,
+            blacklistCheck: { repo in
+                auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name)
+            },
+            onRateLimited: {
+                await MainActor.run {
+                    feedStatusMessage = "GitHub rate limit reached. Retrying in 30 seconds..."
+                }
+            }
+        )
 
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "yyyy-MM-dd"
-                    let dateString = formatter.string(from: date)
+        appendReposToDeck(newRepos)
+        feedStatusMessage = nil
+        auth.errorMessage = nil
 
-                    query += " pushed:>\(dateString)"
+        if currentIndex >= repos.count {
+            currentIndex = 0
+        }
+
+        return newRepos
+    }
+
+    @MainActor
+    private func appendReposToDeck(_ newRepos: [Repo]) {
+        let existingIDs = Set(allRepos.map { "\($0.owner)/\($0.name)" })
+        let uniqueRepos = newRepos.filter { repo in
+            !existingIDs.contains("\(repo.owner)/\(repo.name)")
+        }
+        let shuffledNewRepos = uniqueRepos.shuffled()
+
+        allRepos.append(contentsOf: shuffledNewRepos)
+        repos.append(contentsOf: shuffledNewRepos)
+    }
+
+    private func buildRepoQuery(language: String?, preferences: UserPreferences) -> String {
+        var query = language.map { "language:\($0) " } ?? ""
+        query += "stars:<\(preferences.starLimit)"
+
+        if preferences.recentlyUpdatedDays > 0 {
+            let date = Calendar.current.date(
+                byAdding: .day,
+                value: -preferences.recentlyUpdatedDays,
+                to: Date()
+            ) ?? Date()
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let dateString = formatter.string(from: date)
+
+            query += " pushed:>\(dateString)"
+        }
+
+        return query
+    }
+
+    @MainActor
+    private func fetchLanguages(for repos: [Repo]) async {
+        for repo in repos {
+            if Task.isCancelled { return }
+
+            do {
+                let languages = try await GitHubService.fetchLanguages(
+                    urlString: repo.languagesURL,
+                    token: auth.accessToken
+                )
+
+                if let index = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
+                    self.allRepos[index].languages = languages
                 }
 
-                DispatchQueue.main.async {
-                    GitHubService.fetchRepos(
-                        query: query,
-                        token: auth.accessToken,
-                        existing: self.allRepos,
-                        blacklistCheck: { repo in
-                            auth.isRepoBlacklisted(owner: repo.owner, repo: repo.name)
-                        }
-                    ) { newRepos in
-                        self.allRepos.append(contentsOf: newRepos)
-                        self.repos = self.allRepos.shuffled()
-
-                        if self.currentIndex >= self.repos.count {
-                            self.currentIndex = 0
-                        }
-
-                        for repo in newRepos.prefix(5) {
-                            GitHubService.fetchLanguages(
-                                urlString: repo.languagesURL,
-                                token: auth.accessToken
-                            ) { languages in
-                                if let index = self.allRepos.firstIndex(where: { $0.id == repo.id }) {
-                                    self.allRepos[index].languages = languages
-                                }
-                            }
-                        }
-                    }
+                if let index = self.repos.firstIndex(where: { $0.id == repo.id }) {
+                    self.repos[index].languages = languages
                 }
-
-                // Throttle requests (0.5s delay)
-                Thread.sleep(forTimeInterval: 0.5)
+            } catch {
+                if Task.isCancelled { return }
+                showFeedError(error)
             }
         }
+    }
+
+    private func showFeedError(_ error: Error) {
+        let message: String
+
+        if case GitHubClientError.rateLimited = error {
+            feedStatusMessage = "GitHub rate limit reached. Please try again later."
+            return
+        }
+
+        if let localizedError = error as? LocalizedError,
+           let description = localizedError.errorDescription {
+            message = "Couldn't load feed: \(description)"
+        } else {
+            message = "Couldn't load feed. Please try again."
+        }
+
+        feedStatusMessage = message
+        auth.errorMessage = message
     }
 }
 

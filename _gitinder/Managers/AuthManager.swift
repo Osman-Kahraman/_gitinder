@@ -23,6 +23,8 @@ class AuthManager: ObservableObject {
     @Published var blacklistedRepos: Set<String> = []
     @Published private(set) var isSyncingStars = false
     @Published var phase: AuthPhase = .unauthenticated
+    
+    @Published var errorMessage: String?
 
     private let credentialsStore = CredentialsStore()
     private let gitHubClient = GitHubClient()
@@ -60,6 +62,7 @@ class AuthManager: ObservableObject {
         profile = UserProfile()
         self.accessToken = nil
         self.starState = StarState()
+        self.errorMessage = nil
         self.phase = .unauthenticated
     }
     
@@ -110,7 +113,13 @@ class AuthManager: ObservableObject {
     }
     
     func fetchGitHubUser() async {
-        guard let token = accessToken else { return }
+        guard let token = accessToken else {
+            self.phase = .unauthenticated
+            return
+        }
+
+        self.phase = .loading
+        self.errorMessage = nil
 
         do {
             self.profile = try await gitHubClient.fetchCurrentUser(token: token)
@@ -121,12 +130,20 @@ class AuthManager: ObservableObject {
                 logout()
                 self.phase = .unauthenticated
             } else {
-                self.phase = .error("Couldn't get user infos, please try again")
+                self.phase = .error(userFacingMessage(prefix: "Couldn't get user infos", error: error))
             }
         }
     }
     
     private func isUnauthorized(_ error: Error) -> Bool {
+        if case GitHubClientError.unauthorized = error {
+            return true
+        }
+
+        if case let GitHubClientError.network(underlyingError) = error {
+            return isUnauthorized(underlyingError)
+        }
+
         return false
     }
     
@@ -136,11 +153,12 @@ class AuthManager: ObservableObject {
         do {
             let repos = try await gitHubClient.fetchStarredRepositories(token: token)
             self.starState.starredRepos = repos
+            self.errorMessage = nil
             if self.starState.localStarredRepos.isEmpty {
                 self.starState.localStarredRepos = self.starState.starredRepos
             }
         } catch {
-            print("Fetch starred repos error:", error)
+            handleRecoverableGitHubError(error, fallbackMessage: "Couldn't refresh starred repositories")
         }
     }
     
@@ -148,9 +166,11 @@ class AuthManager: ObservableObject {
         guard let token = accessToken else { return false }
 
         do {
-            return try await gitHubClient.starRepository(owner: owner, repo: repo, token: token)
+            let success = try await gitHubClient.starRepository(owner: owner, repo: repo, token: token)
+            self.errorMessage = nil
+            return success
         } catch {
-            print("Star error:", error)
+            handleRecoverableGitHubError(error, fallbackMessage: "Couldn't star \(owner)/\(repo)")
             return false
         }
     }
@@ -159,11 +179,30 @@ class AuthManager: ObservableObject {
         guard let token = accessToken else { return false }
 
         do {
-            return try await gitHubClient.unstarRepository(owner: owner, repo: repo, token: token)
+            let success = try await gitHubClient.unstarRepository(owner: owner, repo: repo, token: token)
+            self.errorMessage = nil
+            return success
         } catch {
-            print("Unstar error:", error)
+            handleRecoverableGitHubError(error, fallbackMessage: "Couldn't unstar \(owner)/\(repo)")
             return false
         }
+    }
+
+    private func handleRecoverableGitHubError(_ error: Error, fallbackMessage: String) {
+        if isUnauthorized(error) {
+            logout()
+        } else {
+            self.errorMessage = userFacingMessage(prefix: fallbackMessage, error: error)
+        }
+    }
+
+    private func userFacingMessage(prefix: String, error: Error) -> String {
+        if let localizedError = error as? LocalizedError,
+           let description = localizedError.errorDescription {
+            return "\(prefix): \(description)"
+        }
+
+        return "\(prefix). Please try again."
     }
     
     func addLocalStar(repo: Repo) {

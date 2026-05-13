@@ -26,7 +26,28 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if auth.isLoggedIn {
+            switch auth.phase {
+            case .unauthenticated:
+                LoginView()
+                    .environmentObject(auth)
+
+            case .loading:
+                LoadingView()
+
+            case .error(let message):
+                VStack(spacing: 16) {
+                    Text(message)
+                        .foregroundColor(.white)
+
+                    Button("Try Again") {
+                        Task { await auth.fetchGitHubUser() }
+                    }
+                    .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.ignoresSafeArea())
+
+            case .ready:
                 if auth.needsOnboarding {
                     LanguagesView(isOnboarding: true)
                         .tint(.white)
@@ -51,10 +72,15 @@ struct ContentView: View {
                     }
                     .tint(.white)
                 }
-            } else {
-                LoginView()
-                    .environmentObject(auth)
             }
+        }
+        .alert("Something went wrong", isPresented: Binding(
+            get: { auth.errorMessage != nil },
+            set: { if !$0 { auth.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { auth.errorMessage = nil }
+        } message: {
+            Text(auth.errorMessage ?? "")
         }
     }
 }
