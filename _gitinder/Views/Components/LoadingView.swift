@@ -42,13 +42,21 @@ struct LoadingView: View {
                 .padding(.horizontal, 32)
                 .transition(.opacity)
         }
-        .onAppear {
-            startTipRotation()
+        .task {
+            await rotateTips()
         }
     }
 
-    func startTipRotation() {
-        Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+    private func rotateTips() async {
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(nanoseconds: 8_000_000_000)
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled else { return }
+
             withAnimation {
                 tipIndex += 1
             }

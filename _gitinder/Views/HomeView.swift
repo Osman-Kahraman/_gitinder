@@ -27,6 +27,11 @@ struct HomeView: View {
             fetchTrendingRepositories: fetchTrendingRepositories
         )
         .environmentObject(auth)
+        .onChange(of: currentIndex) { _, newIndex in
+            Task {
+                await fetchLanguagesForUpcomingCards(from: newIndex)
+            }
+        }
     }
 
     private func fetchTrendingRepositories(resetDeck: Bool) {
@@ -73,8 +78,8 @@ struct HomeView: View {
         guard !preferences.selectedLanguages.isEmpty else {
             do {
                 let query = buildRepoQuery(language: nil, preferences: preferences)
-                let newRepos = try await fetchAndAppendRepos(query: query)
-                await fetchLanguages(for: Array(newRepos.prefix(5)))
+                try await fetchAndAppendRepos(query: query)
+                await fetchLanguagesForUpcomingCards(from: currentIndex)
             } catch {
                 if Task.isCancelled { return }
                 showFeedError(error)
@@ -90,8 +95,8 @@ struct HomeView: View {
                 if Task.isCancelled { return }
 
                 let query = buildRepoQuery(language: language, preferences: preferences)
-                let newRepos = try await fetchAndAppendRepos(query: query)
-                await fetchLanguages(for: Array(newRepos.prefix(5)))
+                try await fetchAndAppendRepos(query: query)
+                await fetchLanguagesForUpcomingCards(from: currentIndex)
                 try await Task.sleep(nanoseconds: 500_000_000)
             }
         } catch {
@@ -101,7 +106,7 @@ struct HomeView: View {
     }
 
     @MainActor
-    private func fetchAndAppendRepos(query: String) async throws -> [Repo] {
+    private func fetchAndAppendRepos(query: String) async throws {
         let newRepos = try await GitHubService.fetchRepos(
             query: query,
             token: auth.accessToken,
@@ -123,8 +128,6 @@ struct HomeView: View {
         if currentIndex >= repos.count {
             currentIndex = 0
         }
-
-        return newRepos
     }
 
     @MainActor
@@ -158,6 +161,18 @@ struct HomeView: View {
         }
 
         return query
+    }
+
+    @MainActor
+    private func fetchLanguagesForUpcomingCards(from index: Int) async {
+        let upperBound = min(index + 8, repos.count)
+        guard index < upperBound else { return }
+
+        let upcomingRepos = repos[index..<upperBound].filter { repo in
+            repo.languages.isEmpty && !repo.languagesURL.isEmpty
+        }
+
+        await fetchLanguages(for: Array(upcomingRepos))
     }
 
     @MainActor
