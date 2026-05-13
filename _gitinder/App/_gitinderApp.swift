@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct GitSwipeApp: App {
-
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var auth = AuthManager()
     private let credentialsStore = CredentialsStore()
     private let gitHubAuthClient = GitHubAuthClient()
@@ -20,6 +20,11 @@ struct GitSwipeApp: App {
                 .environmentObject(auth)
                 .onOpenURL { url in
                     handleGitHubCallback(url: url)
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    if newPhase == .inactive || newPhase == .background {
+                        auth.syncStarChanges()
+                    }
                 }
         }
     }

@@ -42,6 +42,8 @@ struct LoadingView: View {
                 .padding(.horizontal, 32)
                 .transition(.opacity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
         .task {
             await rotateTips()
         }
