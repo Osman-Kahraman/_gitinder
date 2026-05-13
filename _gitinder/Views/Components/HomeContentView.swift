@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HomeContentView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @Binding var repos: [Repo]
     @Binding var currentIndex: Int
     @Binding var isLoadingFeed: Bool

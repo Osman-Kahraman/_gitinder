@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StarLimitView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @Environment(\.dismiss) private var dismiss
     @State private var selectedStarLimit: Int = 100
 
@@ -58,5 +58,5 @@ struct StarLimitView: View {
 
 #Preview {
     StarLimitView()
-        .environmentObject(AuthManager())
+        .environmentObject(AuthController())
 }

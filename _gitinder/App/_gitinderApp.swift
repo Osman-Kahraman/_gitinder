@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct GitSwipeApp: App {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var auth = AuthManager()
+    @StateObject private var auth = AuthController()
     private let credentialsStore = CredentialsStore()
     private let gitHubAuthClient = GitHubAuthClient()
 

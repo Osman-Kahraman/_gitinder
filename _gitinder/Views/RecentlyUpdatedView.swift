@@ -9,7 +9,7 @@ import SwiftUI
 
 struct RecentlyUpdatedView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @State private var selection: Int = 0
 
     let options: [(String, Int)] = [
@@ -74,5 +74,5 @@ struct RecentlyUpdatedView: View {
 
 #Preview {
     RecentlyUpdatedView()
-        .environmentObject(AuthManager())
+        .environmentObject(AuthController())
 }

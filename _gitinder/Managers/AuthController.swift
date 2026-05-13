@@ -1,5 +1,5 @@
 //
-//  AuthManager.swift
+//  AuthController.swift
 //  _gitinder
 //
 //  Created by Osman Kahraman on 2026-02-26.
@@ -15,7 +15,7 @@ enum AuthPhase: Equatable {
 }
 
 @MainActor
-class AuthManager: ObservableObject {
+class AuthController: ObservableObject {
     @Published var profile = UserProfile()
     @Published var accessToken: String?
     @Published var starState = StarState()

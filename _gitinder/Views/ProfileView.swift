@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
 
     var body: some View {
         ZStack {
@@ -166,7 +166,7 @@ struct ProfileView: View {
 }
 
 private struct PreviewWrapper: View {
-    @StateObject private var auth = AuthManager()
+    @StateObject private var auth = AuthController()
 
     var body: some View {
         ProfileView()

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LanguagesView: View {
 
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @Environment(\.dismiss) private var dismiss
     var isOnboarding: Bool = false
 
@@ -105,5 +105,5 @@ struct LanguagesView: View {
 
 #Preview {
     LanguagesView(isOnboarding: false)
-        .environmentObject(AuthManager())
+        .environmentObject(AuthController())
 }

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @State private var repos: [Repo] = []
     @State private var allRepos: [Repo] = []
 
@@ -222,5 +222,5 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
-        .environmentObject(AuthManager())
+        .environmentObject(AuthController())
 }

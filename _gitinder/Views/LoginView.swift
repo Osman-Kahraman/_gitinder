@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 
 struct LoginView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
     @State private var username: String = ""
     @State private var animatedText: String = ""
     @State private var currentWordIndex: Int = 0

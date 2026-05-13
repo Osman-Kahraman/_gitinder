@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var auth: AuthController
 
     init() {
         let appearance = UITabBarAppearance()
@@ -87,5 +87,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environmentObject(AuthManager())
+        .environmentObject(AuthController())
 }
