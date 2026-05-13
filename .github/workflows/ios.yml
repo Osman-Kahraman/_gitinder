@@ -27,5 +27,5 @@ jobs:
         run: |
           xcodebuild \
           -scheme _gitinder \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
           clean build
