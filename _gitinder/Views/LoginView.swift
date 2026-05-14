@@ -35,6 +35,7 @@ struct LoginView: View {
             VStack(spacing: 16) {
                 Button(action: {
                     if let url = auth.getOAuthURL() {
+                        HapticManager.shared.success()
                         authURL = url
                         showSafari = true
                     }
