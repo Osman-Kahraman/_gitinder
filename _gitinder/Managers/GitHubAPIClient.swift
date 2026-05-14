@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class GitHubClient {
+final class GitHubAPIClient {
     func fetchCurrentUser(token: String) async throws -> UserProfile {
         let request = try GitHubHTTPClient.makeRequest(
             urlString: "https://api.github.com/user",

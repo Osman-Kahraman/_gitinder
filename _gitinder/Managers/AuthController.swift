@@ -27,7 +27,7 @@ class AuthController: ObservableObject {
     @Published var errorMessage: String?
 
     private let credentialsStore = CredentialsStore()
-    private let gitHubClient = GitHubClient()
+    private let gitHubAPIClient = GitHubAPIClient()
     private let preferencesStore = PreferencesStore()
 
     var isLoggedIn: Bool {
@@ -122,7 +122,7 @@ class AuthController: ObservableObject {
         self.errorMessage = nil
 
         do {
-            self.profile = try await gitHubClient.fetchCurrentUser(token: token)
+            self.profile = try await gitHubAPIClient.fetchCurrentUser(token: token)
             await fetchStarredRepositories()
             self.phase = .ready
         } catch {
@@ -151,7 +151,7 @@ class AuthController: ObservableObject {
         guard let token = accessToken else { return }
 
         do {
-            let repos = try await gitHubClient.fetchStarredRepositories(token: token)
+            let repos = try await gitHubAPIClient.fetchStarredRepositories(token: token)
             self.starState.starredRepos = repos
             self.errorMessage = nil
             if self.starState.localStarredRepos.isEmpty {
@@ -166,7 +166,7 @@ class AuthController: ObservableObject {
         guard let token = accessToken else { return false }
 
         do {
-            let success = try await gitHubClient.starRepository(owner: owner, repo: repo, token: token)
+            let success = try await gitHubAPIClient.starRepository(owner: owner, repo: repo, token: token)
             self.errorMessage = nil
             return success
         } catch {
@@ -179,7 +179,7 @@ class AuthController: ObservableObject {
         guard let token = accessToken else { return false }
 
         do {
-            let success = try await gitHubClient.unstarRepository(owner: owner, repo: repo, token: token)
+            let success = try await gitHubAPIClient.unstarRepository(owner: owner, repo: repo, token: token)
             self.errorMessage = nil
             return success
         } catch {
