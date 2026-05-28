@@ -129,6 +129,8 @@ struct HomeContentView: View {
                             let repo = repos[currentIndex]
                             auth.addRepoToBlacklist(owner: repo.owner, repo: repo.name)
                             
+                            HapticManager.shared.medium()
+                            
                             nextCard()
                         },
                         onSwipeRight: {
@@ -138,6 +140,8 @@ struct HomeContentView: View {
                             guard currentIndex >= 0 else { return }
                             let repo = repos[currentIndex]
                             auth.addLocalStar(repo: repo)
+                            
+                            HapticManager.shared.success()
                             
                             nextCard()
                         },

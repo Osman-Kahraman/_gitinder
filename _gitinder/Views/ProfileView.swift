@@ -12,110 +12,106 @@ struct ProfileView: View {
     @EnvironmentObject var auth: AuthController
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            List {
-                // Header Section
-                Section {
-                    VStack(spacing: 12) {
-                        if let avatarURL = auth.profile.avatarURL,
-                           let url = URL(string: avatarURL) {
-                            AsyncImage(url: url) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            } placeholder: {
-                                Color.gray.opacity(0.3)
-                            }
-                            .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 120, height: 120)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 60, height: 60)
-                                        .foregroundColor(.white.opacity(0.8))
-                                )
+        List {
+            // Header Section
+            Section {
+                VStack(spacing: 12) {
+                    if let avatarURL = auth.profile.avatarURL,
+                       let url = URL(string: avatarURL) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Color.gray.opacity(0.3)
                         }
-
-                        Text(auth.profile.username.isEmpty ? "GitHub User" : auth.profile.username)
-                            .font(.custom("Doto-Black_ExtraBold", size: 24))
-
-                        Text(auth.profile.username.isEmpty ? "@username" : "@\(auth.profile.username.lowercased())")
-                            .foregroundColor(.gray)
-                            .font(.custom("Doto-Black_Bold", size: 14))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-                    .listRowBackground(Color.black)
-                }
-
-                // Stats Section
-                Section {
-                    HStack(spacing: 40) {
-                        profileStat(title: "Repos", value: "\(auth.profile.publicRepos)")
-                        profileStat(title: "Followers", value: "\(auth.profile.followers)")
-                        profileStat(title: "Following", value: "\(auth.profile.following)")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .listRowBackground(Color.black)
-                }
-
-                // Logout Section
-                Section {
-                    Button("Logout") {
-                        auth.logout()
-                    }
-                    .font(.custom("Doto-Black_Bold", size: 14))
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red.opacity(0.8))
-                    .cornerRadius(8)
-                    .listRowBackground(Color.black)
-                }
-
-                // Starred Repositories Section
-                Section(header:
-                    Text("Lastly Starred Repositories (\(auth.starState.localStarredRepos.count))")
-                        .font(.custom("Doto-Black_Bold", size: 19))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 6)
-                        .background(Color.black)
-                        .listRowInsets(EdgeInsets())
-                ) {
-                    if auth.starState.localStarredRepos.isEmpty {
-                        Text("No starred repositories yet.")
-                            .foregroundColor(.gray)
-                            .font(.custom("Doto-Black_Bold", size: 13))
-                            .listRowBackground(Color.black)
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
                     } else {
-                        ForEach(auth.starState.localStarredRepos) { repo in
-                            pinnedRepoCard(name: repo.name, description: repo.description)
-                                .listRowBackground(Color.black)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        auth.removeLocalStar(owner: repo.owner, repo: repo.name)
-                                    } label: {
-                                        Label("", systemImage: "star.slash")
-                                    }
-                                    .tint(.red.opacity(0.8))
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 120, height: 120)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 60, height: 60)
+                                    .foregroundColor(.white.opacity(0.8))
+                            )
+                    }
+
+                    Text(auth.profile.username.isEmpty ? "GitHub User" : auth.profile.username)
+                        .font(.custom("Doto-Black_ExtraBold", size: 24))
+
+                    Text(auth.profile.username.isEmpty ? "@username" : "@\(auth.profile.username.lowercased())")
+                        .foregroundColor(.gray)
+                        .font(.custom("Doto-Black_Bold", size: 14))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .listRowBackground(Color.black)
+            }
+
+            // Stats Section
+            Section {
+                HStack(spacing: 40) {
+                    profileStat(title: "Repos", value: "\(auth.profile.publicRepos)")
+                    profileStat(title: "Followers", value: "\(auth.profile.followers)")
+                    profileStat(title: "Following", value: "\(auth.profile.following)")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .listRowBackground(Color.black)
+            }
+
+            // Logout Section
+            Section {
+                Button("Logout") {
+                    auth.logout()
+                }
+                .font(.custom("Doto-Black_Bold", size: 14))
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.red.opacity(0.8))
+                .cornerRadius(8)
+                .listRowBackground(Color.black)
+            }
+
+            // Starred Repositories Section
+            Section(header:
+                Text("Lastly Starred Repositories (\(auth.starState.localStarredRepos.count))")
+                    .font(.custom("Doto-Black_Bold", size: 19))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 6)
+                    .background(Color.black)
+                    .listRowInsets(EdgeInsets())
+            ) {
+                if auth.starState.localStarredRepos.isEmpty {
+                    Text("No starred repositories yet.")
+                        .foregroundColor(.gray)
+                        .font(.custom("Doto-Black_Bold", size: 13))
+                        .listRowBackground(Color.black)
+                } else {
+                    ForEach(auth.starState.localStarredRepos) { repo in
+                        pinnedRepoCard(name: repo.name, description: repo.description)
+                            .listRowBackground(Color.black)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    auth.removeLocalStar(owner: repo.owner, repo: repo.name)
+                                    HapticManager.shared.heavy()
+                                } label: {
+                                    Label("", systemImage: "star.slash")
                                 }
-                        }
+                                .tint(.red.opacity(0.8))
+                            }
                     }
                 }
-
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.black.ignoresSafeArea())
+
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.black.ignoresSafeArea())
         .onAppear {
             Task {
                 await auth.fetchStarredRepositories()
