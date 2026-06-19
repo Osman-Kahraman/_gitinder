@@ -1,7 +1,11 @@
+node_modules/
+dist/
 venv/
 .venv/
 env/
 ENV/
+.env
+!.env.example
 oauth/.env
 _gitinder/Resources/Config.xcconfig
 .DS_Store
