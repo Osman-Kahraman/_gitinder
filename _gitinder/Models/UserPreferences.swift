@@ -11,4 +11,5 @@ struct UserPreferences: Codable {
     var selectedLanguages: [String] = []
     var starLimit: Int = 100
     var recentlyUpdatedDays: Int = 0
+    var aiPreferenceDescription: String = ""
 }

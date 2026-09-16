@@ -143,8 +143,18 @@ struct HomeView: View {
     }
 
     private func buildRepoQuery(language: String?, preferences: UserPreferences) -> String {
-        var query = language.map { "language:\($0) " } ?? ""
-        query += "stars:<\(preferences.starLimit)"
+        var queryParts: [String] = []
+
+        if let language {
+            queryParts.append("language:\(language)")
+        }
+
+        let aiKeywords = normalizedAIKeywords(from: preferences.aiPreferenceDescription)
+        if !aiKeywords.isEmpty {
+            queryParts.append(aiKeywords)
+        }
+
+        queryParts.append("stars:<\(preferences.starLimit)")
 
         if preferences.recentlyUpdatedDays > 0 {
             let date = Calendar.current.date(
@@ -157,10 +167,18 @@ struct HomeView: View {
             formatter.dateFormat = "yyyy-MM-dd"
             let dateString = formatter.string(from: date)
 
-            query += " pushed:>\(dateString)"
+            queryParts.append("pushed:>\(dateString)")
         }
 
-        return query
+        return queryParts.joined(separator: " ")
+    }
+
+    private func normalizedAIKeywords(from description: String) -> String {
+        description
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .prefix(8)
+            .joined(separator: " ")
     }
 
     @MainActor

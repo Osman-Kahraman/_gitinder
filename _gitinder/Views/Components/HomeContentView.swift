@@ -17,6 +17,7 @@ struct HomeContentView: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var lastSwipeDirection: CGFloat = 0
+    @State private var showAIPreferences = false
     @State private var showLanguagePreferences = false
     @State private var showStarPreferences = false
     @State private var showUpdatedPreferences = false
@@ -26,6 +27,24 @@ struct HomeContentView: View {
         VStack {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
+                    Button {
+                        withAnimation(.spring()) {
+                            showAIPreferences.toggle()
+                        }
+                    } label: {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(auth.preferences.aiPreferenceDescription.isEmpty ? .white : .green)
+                            .frame(width: 46, height: 46)
+                            .background(Color.black)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(auth.preferences.aiPreferenceDescription.isEmpty ? Color.white.opacity(0.8) : Color.green, lineWidth: 1.5)
+                            )
+                            .cornerRadius(14)
+                    }
+                    .accessibilityLabel("Ask AI for repository preferences")
+
                     Image(systemName: "slider.horizontal.3")
                         .foregroundColor(.gray)
                     
@@ -175,6 +194,13 @@ struct HomeContentView: View {
         )
         .animation(.easeOut(duration: 0.6), value: dragOffset)
         .animation(.spring(), value: currentIndex)
+        .sheet(isPresented: $showAIPreferences) {
+            AIPreferencesView()
+                .environmentObject(auth)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.black)
+        }
         .sheet(isPresented: $showLanguagePreferences) {
             LanguagesView()
                 .environmentObject(auth)

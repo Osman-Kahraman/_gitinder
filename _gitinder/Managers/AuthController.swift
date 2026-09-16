@@ -83,6 +83,12 @@ class AuthController: ObservableObject {
         savePreferences(updatedPreferences)
     }
 
+    func saveAIPreferenceDescription(_ description: String) {
+        var updatedPreferences = preferences
+        updatedPreferences.aiPreferenceDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        savePreferences(updatedPreferences)
+    }
+
     func addRepoToBlacklist(owner: String, repo: String) {
         let key = "\(owner)/\(repo)"
         blacklistedRepos.insert(key)
