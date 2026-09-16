@@ -6,3 +6,4 @@
 //
 
 CLIENT_ID = YOUR-GITHUB-OAUTH-APP-ID
+OAUTH_EXCHANGE_URL = https:/$()/gitinder-auth.onrender.com/oauth/exchange

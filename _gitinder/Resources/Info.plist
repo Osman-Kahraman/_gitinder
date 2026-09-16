@@ -23,6 +23,8 @@
 	</array>
 	<key>CLIENT_ID</key>
 	<string>$(CLIENT_ID)</string>
+	<key>OAUTH_EXCHANGE_URL</key>
+	<string>$(OAUTH_EXCHANGE_URL)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Doto-VariableFont_ROND,wght.ttf</string>

@@ -8,7 +8,13 @@
 import Foundation
 
 final class GitHubAuthClient {
-    private let exchangeURL = URL(string: "http://localhost:3000/oauth/exchange")
+    private var exchangeURL: URL? {
+        guard let urlString = Bundle.main.object(forInfoDictionaryKey: "OAUTH_EXCHANGE_URL") as? String else {
+            return nil
+        }
+
+        return URL(string: urlString)
+    }
 
     func exchangeCodeForToken(_ code: String) async throws -> String {
         guard let exchangeURL else {
