@@ -44,7 +44,7 @@ Before running the project, configure the OAuth backend.
 Copy `.env.example` file to `env` and `Config.xcconfig.example` file to `Config.xcconfig` for local development.
 
 ```bash
-cp oauth/.env.example outh/.env
+cp oauth/.env.example oauth/.env
 cp _gitinder/Resources/Config.xcconfig.example _gitinder/Resources/Config.xcconfig
 ```
 
