@@ -86,6 +86,11 @@ class AuthController: ObservableObject {
     func saveAIPreferenceDescription(_ description: String) {
         var updatedPreferences = preferences
         updatedPreferences.aiPreferenceDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if updatedPreferences.aiPreferenceDescription.isEmpty {
+            updatedPreferences.aiSearchQuery = ""
+        }
+
         savePreferences(updatedPreferences)
     }
 

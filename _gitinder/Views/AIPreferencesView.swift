@@ -11,7 +11,10 @@ struct AIPreferencesView: View {
     @EnvironmentObject var auth: AuthController
     @Environment(\.dismiss) private var dismiss
     @State private var description: String = ""
+    @State private var isApplying = false
+    @State private var errorMessage: String?
 
+    private let aiClient = AIPreferencesClient()
     private let promptPlaceholder = "Describe what you want to discover..."
 
     var body: some View {
@@ -44,9 +47,17 @@ struct AIPreferencesView: View {
                 }
             }
 
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.custom("Doto-Black_Bold", size: 13))
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+            }
+
             HStack(spacing: 12) {
                 Button {
                     description = ""
+                    errorMessage = nil
                     auth.saveAIPreferenceDescription("")
                     dismiss()
                 } label: {
@@ -60,27 +71,76 @@ struct AIPreferencesView: View {
                 .accessibilityLabel("Clear AI preferences")
 
                 Button {
-                    auth.saveAIPreferenceDescription(description)
-                    dismiss()
+                    applyAIPreferences()
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                        Text("Apply")
+                        if isApplying {
+                            ProgressView()
+                                .tint(.black)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+
+                        Text(isApplying ? "Applying" : "Apply")
                     }
                     .font(.custom("Doto-Black_Bold", size: 18))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.green)
+                    .background(applyButtonColor)
                     .cornerRadius(14)
                 }
-                .disabled(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(trimmedDescription.isEmpty || isApplying)
             }
         }
         .padding()
         .background(Color.black.ignoresSafeArea())
         .onAppear {
             description = auth.preferences.aiPreferenceDescription
+        }
+    }
+
+    private var trimmedDescription: String {
+        description.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var applyButtonColor: Color {
+        trimmedDescription.isEmpty || isApplying ? Color.gray : Color.green
+    }
+
+    private func applyAIPreferences() {
+        let requestDescription = trimmedDescription
+        guard !requestDescription.isEmpty else { return }
+
+        isApplying = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let response = try await aiClient.generatePreferences(
+                    description: requestDescription,
+                    currentPreferences: auth.preferences
+                )
+
+                var updatedPreferences = auth.preferences
+                updatedPreferences.selectedLanguages = response.selectedLanguages
+                updatedPreferences.starLimit = response.starLimit
+                updatedPreferences.recentlyUpdatedDays = response.recentlyUpdatedDays
+                updatedPreferences.aiPreferenceDescription = requestDescription
+                updatedPreferences.aiSearchQuery = response.searchQuery
+
+                auth.savePreferences(updatedPreferences)
+                dismiss()
+            } catch {
+                if let localizedError = error as? LocalizedError,
+                   let description = localizedError.errorDescription {
+                    errorMessage = description
+                } else {
+                    errorMessage = "Couldn't apply AI preferences."
+                }
+            }
+
+            isApplying = false
         }
     }
 }

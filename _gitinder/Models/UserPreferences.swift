@@ -12,4 +12,5 @@ struct UserPreferences: Codable {
     var starLimit: Int = 100
     var recentlyUpdatedDays: Int = 0
     var aiPreferenceDescription: String = ""
+    var aiSearchQuery: String = ""
 }

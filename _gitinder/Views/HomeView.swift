@@ -149,9 +149,12 @@ struct HomeView: View {
             queryParts.append("language:\(language)")
         }
 
-        let aiKeywords = normalizedAIKeywords(from: preferences.aiPreferenceDescription)
-        if !aiKeywords.isEmpty {
-            queryParts.append(aiKeywords)
+        let aiQuery = preferences.aiSearchQuery.isEmpty
+            ? normalizedAIKeywords(from: preferences.aiPreferenceDescription)
+            : preferences.aiSearchQuery
+
+        if !aiQuery.isEmpty {
+            queryParts.append(aiQuery)
         }
 
         queryParts.append("stars:<\(preferences.starLimit)")
