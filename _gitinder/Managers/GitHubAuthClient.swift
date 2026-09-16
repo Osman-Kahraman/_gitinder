@@ -8,7 +8,7 @@
 import Foundation
 
 final class GitHubAuthClient {
-    private let exchangeURL = URL(string: "https://gitinder-auth.onrender.com/oauth/exchange")
+    private let exchangeURL = URL(string: "http://localhost:3000/oauth/exchange")
 
     func exchangeCodeForToken(_ code: String) async throws -> String {
         guard let exchangeURL else {
