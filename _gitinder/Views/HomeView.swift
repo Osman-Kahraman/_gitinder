@@ -75,6 +75,7 @@ struct HomeView: View {
             return
         }
         
+        // Limit to first 5 languages to avoid GitHub boolean operator limit
         guard !preferences.selectedLanguages.isEmpty else {
             do {
                 let query = buildRepoQuery(language: nil, preferences: preferences)
@@ -144,32 +145,37 @@ struct HomeView: View {
 
     private func buildRepoQuery(language: String?, preferences: UserPreferences) -> String {
         var queryParts: [String] = []
-
         if let language {
             queryParts.append("language:\(language)")
         }
-
-        let aiQuery = preferences.aiSearchQuery.isEmpty
-            ? normalizedAIKeywords(from: preferences.aiPreferenceDescription)
-            : preferences.aiSearchQuery
-
+        // AI keyword combination logic
+        let aiQuery: String = {
+            let raw = preferences.aiSearchQuery.isEmpty
+                ? normalizedAIKeywords(from: preferences.aiPreferenceDescription)
+                : preferences.aiSearchQuery
+            let keywords = raw.split(separator: " ").map { String($0) }.filter { !$0.isEmpty }
+            guard !keywords.isEmpty else { return "" }
+            let main = keywords[0]
+            let others = Array(keywords.dropFirst())
+            if others.isEmpty { return main }
+            // For each alternative: (main other)
+            let combos = others.map { "(\(main) \($0))" }
+            // Combine all with OR
+            return combos.joined(separator: " OR ")
+        }()
         if !aiQuery.isEmpty {
             queryParts.append(aiQuery)
         }
-
         queryParts.append("stars:<\(preferences.starLimit)")
-
         if preferences.recentlyUpdatedDays > 0 {
             let date = Calendar.current.date(
                 byAdding: .day,
                 value: -preferences.recentlyUpdatedDays,
                 to: Date()
             ) ?? Date()
-
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
             let dateString = formatter.string(from: date)
-
             queryParts.append("pushed:>\(dateString)")
         }
 
@@ -245,3 +251,4 @@ struct HomeView: View {
     HomeView()
         .environmentObject(AuthController())
 }
+
